@@ -8,7 +8,7 @@ restatements. Nothing here is specific to any one case.
 
 Mathlib has no category of motives, and we do not build one. The structure below
 abstracts exactly the six pieces of data an instance must supply, with no motivic
-content whatsoever, and characterises the expected behaviour of that data through four
+content whatsoever, and characterises the expected behaviour of that data through five
 requirements.
 
 \section{The data}
@@ -23,7 +23,8 @@ requirements.
     \item $L \colon \Omega \to \C \to \C$, the analytic $L$-function $L(M,s)$;
     \item $E \colon \Omega \to \{\text{intermediate fields } \Q \subseteq E \subseteq \C\}$,
       the value field $E(M)$;
-    \item $w \in \Z$, the common weight: the functional equation exchanges $s$ and $w+1-s$;
+    \item $w \colon \Omega \to \Z$, the weight: the functional equation of $M$ exchanges $s$
+      and $w(M)+1-s$;
     \item $\mathrm{shifts} \colon \Omega \to \operatorname{Multiset}(\Z)$, the shifts of the
       archimedean Gamma factor, which is then
       $\gamma(M,s) \coloneqq \prod_{a \in \mathrm{shifts}(M)} \Gamma_{\R}(s+a)$;
@@ -33,9 +34,10 @@ requirements.
       $\sigma \mapsto (M \mapsto M^{\sigma})$. Here $\operatorname{Gal}(\C/\Q)$ is the group
       of $\Q$-algebra automorphisms of $\C$, which is every field automorphism of $\C$,
   \end{enumerate}
-  subject to four requirements:
+  subject to five requirements:
   \begin{enumerate}
     \setcounter{enumi}{6}
+    \item conjugate objects have the same weight: $w(M^{\sigma}) = w(M)$;
     \item conjugate objects have the same Hodge numbers:
       $\mathrm{shifts}(M^{\sigma}) = \mathrm{shifts}(M)$;
     \item the value field transports along the action:
@@ -43,11 +45,11 @@ requirements.
     \item the value field is algebraic: every $x \in E(M)$ is algebraic over $\Q$;
     \item periods do not vanish at critical integers:
       $\forall M,\ \forall n,\ \operatorname{ord}_{n}\gamma(M,\cdot) \geq 0 \wedge
-      \operatorname{ord}_{w+1-n}\gamma(M,\cdot) \geq 0 \implies c^{+}(M(n)) \neq 0$.
+      \operatorname{ord}_{w(M)+1-n}\gamma(M,\cdot) \geq 0 \implies c^{+}(M(n)) \neq 0$.
   \end{enumerate}
   In the literature the objects of $\Omega$ are motives and most of these fields are derived
   from them; in lieu of a formal definition of a motive, the requirements record the behaviour
-  the derived data would have. In Lean, (x) is stated with criticality written out as arithmetic
+  the derived data would have. In Lean, (xi) is stated with criticality written out as arithmetic
   on the shifts (Lemma~\ref{lem:prodGammaR}), because Definition~\ref{def:isCritical} is made
   from a package and so cannot be named inside the package's own definition.
 \end{definition}
@@ -57,12 +59,13 @@ requirements.
   \lean{Deligne.Pkg.IsCritical, Deligne.Pkg.gammaFactor, Deligne.Pkg.isCritical\_iff}
   \leanok
   \uses{def:pkg, lem:prodGammaR}
-  $n$ is \emph{critical} for $M$ when $\gamma(M,\cdot)$ has a pole at neither $n$ nor $w+1-n$ ---
+  $n$ is \emph{critical} for $M$ when $\gamma(M,\cdot)$ has a pole at neither $n$ nor
+  $w(M)+1-n$ ---
   the two points exchanged by the functional equation. ``No pole at $s$'' is
   $\operatorname{ord}_{s}\gamma(M,\cdot) \geq 0$, the meromorphic order in mathlib's sense
   (\lean{meromorphicOrderAt}). By Lemma~\ref{lem:prodGammaR} this is the condition that $n + a$
-  and $w + 1 - n + a$ are odd or positive for every shift $a$, which is the form an instance
-  checks it in and the form requirement (x) of Definition~\ref{def:pkg} is stated in.
+  and $w(M) + 1 - n + a$ are odd or positive for every shift $a$, which is the form an instance
+  checks it in and the form requirement (xi) of Definition~\ref{def:pkg} is stated in.
 \end{definition}
 
 \begin{lemma}[$\Gamma_{\R}$ has no zeros]
@@ -158,7 +161,8 @@ requirements.
   \uses{def:pkg, def:isCritical}
   Deligne's functional equation for a motive of weight $w$ exchanges $s$ and $w+1-s$, and
   Definition~\ref{def:isCritical} reflects about that point. An earlier version hard-coded
-  $1-n$, i.e. $w = 0$. That is correct for GL(1), whose Artin motives all have weight $0$, and it
+  $1-n$, i.e. $w = 0$; a later one carried a single weight for the whole package. The former is
+  correct for GL(1), whose Artin motives all have weight $0$, and it
   is wrong --- silently, and in the direction that makes the conjecture say nothing --- for every
   odd-weight motive.
 
@@ -177,19 +181,18 @@ requirements.
   among them. Carrying $w$ as data costs GL(1) one field set to $0$ and keeps
   Definition~\ref{def:pkg} usable for GL(2).
 
-  The weight belongs to the package rather than to the object: it is a \emph{common} weight,
-  which is what makes $M_1 \oplus M_2$ pure and Definition~\ref{def:sum} meaningful. A collection
-  whose members have different weights is split into one package per weight.
+  The weight belongs to the object, not to the package: a package may index motives of
+  different weights, and requirement (vii) records that the Galois action does not change it.
 \end{remark}
 
-\begin{remark}[Why (x) is part of the definition, and why nondegeneracy is not]
+\begin{remark}[Why (xi) is part of the definition, and why nondegeneracy is not]
   \label{rem:not-a-pkg}
   \uses{def:pkg, def:hasCriticalInteger}
-  Requirement (x) is not a side condition bolted on afterwards. Without it the package with
+  Requirement (xi) is not a side condition bolted on afterwards. Without it the package with
   $c^{+} \coloneqq 0$ has $\widetilde{L}_F \equiv 0$, since $x/0 = 0$ in Lean, so both halves
   of Definition~\ref{def:conjecture} hold for free --- $0$ lies in every subfield of $\C$ and
   is fixed by every $\sigma$. Deligne's $c^{+}$ is a determinant of a period matrix and is
-  nonzero by construction, so (x) costs a genuine instance nothing, and making it part of the
+  nonzero by construction, so (xi) costs a genuine instance nothing, and making it part of the
   definition means the degenerate case cannot be written down at all.
 
   An earlier version of this definition had a second requirement of the same apparent kind:
@@ -222,7 +225,7 @@ requirements.
   vanishing period, a too-large value field is not detectable from the shape of the data: $\C$
   is as much a subfield of $\C$ as $\Q$ is.
 
-  Requirement (ix) is the bound: $E(M)$ consists of algebraic numbers, so the largest field an
+  Requirement (x) is the bound: $E(M)$ consists of algebraic numbers, so the largest field an
   instance may name is $\Qbar$ and not $\C$. There Definition~\ref{def:algebraicity} reads
   ``the normalised critical values are algebraic''. That is a weak statement, but it is a
   statement, which is Theorem~\ref{thm:arithmetic-algebraic}.
@@ -234,7 +237,7 @@ requirements.
   GL(1), that $\Q(\chi)$ is finite over $\Q$ --- that buys nothing. What the bound exists for
   is already bought: $E$ can no longer be chosen to make the conjecture true.
 
-  Like requirement (x) and unlike nondegeneracy, the bound passes both tests of
+  Like requirement (xi) and unlike nondegeneracy, the bound passes both tests of
   Remark~\ref{rem:not-a-pkg}. It survives $\oplus$, a compositum of algebraic subfields
   being one; and it excludes no legitimate object, since every motive has a number field for its
   coefficients.
@@ -250,7 +253,7 @@ requirements.
 \end{theorem}
 \begin{proof}
   \leanok
-  $\widetilde{L}_{F}(M,n) \in E(M)$, and $E(M)$ is algebraic by requirement (ix) of
+  $\widetilde{L}_{F}(M,n) \in E(M)$, and $E(M)$ is algebraic by requirement (x) of
   Definition~\ref{def:pkg}.
 \end{proof}
 
@@ -359,7 +362,7 @@ action moves, equivariance still carries the extra content.
 \end{theorem}
 \begin{proof}
   \leanok
-  At a critical $n$ the period does not vanish (requirement (x) of Definition~\ref{def:pkg}),
+  At a critical $n$ the period does not vanish (requirement (xi) of Definition~\ref{def:pkg}),
   so neither does $L(M^{\sigma},n)$, and $\widetilde{L}_{F}(M^{\sigma},n) = \sigma(e(n))^{-1}$;
   Lemma~\ref{lem:isCritical-galois} supplies criticality at $M^{\sigma}$. At $\sigma = 1$ this
   lies in $E(M)$, and $\sigma$ carries $e(n)^{-1}$ to $\sigma(e(n))^{-1}$, which is equivariance.
@@ -371,7 +374,7 @@ Theorem~\ref{thm:period-eq-vacuous} is the one degenerate shape that no requirem
 Definition~\ref{def:pkg} can exclude. An instance defines all its fields at once, so $c^{+}$ may
 be written in terms of $L$, and no requirement stated \emph{within} the structure can detect
 that it was. It is worth being precise about what the requirements do and do not do.
-Requirement (x) forbids a period that \emph{vanishes}; it says nothing about where a nonvanishing
+Requirement (xi) forbids a period that \emph{vanishes}; it says nothing about where a nonvanishing
 period came from. Uniqueness would not help either: a predicate ``$x$ is the period of $M(n)$''
 defined as $x = L(M,n)$ is trivially satisfied by exactly one $x$.
 
@@ -390,7 +393,7 @@ mention its $L$-function. For GL(1) the period is a Gauss sum times a power of $
 \label{sec:guards}
 
 The framework of \S\ref{def:pkg} buys reuse at a price that must be paid
-explicitly. Requirements (ix) and (x) of Definition~\ref{def:pkg} rule out a vanishing period
+explicitly. Requirements (x) and (xi) of Definition~\ref{def:pkg} rule out a vanishing period
 and a value field too big to say anything, but nothing in the definition rules out an
 instance whose $\mathrm{IsCritical}$ is
 honest-looking and still wrong. A reader cannot tell, from the fact that \lean{Conjecture}
@@ -436,14 +439,15 @@ Deligne's conjecture; they are what makes an instantiation of it trustworthy.
 \end{lemma}
 \begin{proof}
   \leanok
-  Criticality depends on $M$ only through $\mathrm{shifts}(M)$ (Definition~\ref{def:isCritical}),
-  and requirement (vii) says $\mathrm{shifts}(M^{\sigma}) = \mathrm{shifts}(M)$.
+  Criticality depends on $M$ only through $w(M)$ and $\mathrm{shifts}(M)$
+  (Definition~\ref{def:isCritical}), and requirements (vii) and (viii) say both are unchanged by
+  $\sigma$.
 \end{proof}
 
 \emph{Coherence} --- this lemma together with the transport $E(M^{\sigma}) = \sigma(E(M))$ of the
-value field --- was once an obligation each instance discharged separately. Requirements (vii)
-and (viii) of Definition~\ref{def:pkg} absorb it: what an instance now proves, in proving those
-two requirements, is exactly what it used to prove afterwards.
+value field --- was once an obligation each instance discharged separately. Requirements
+(vii)--(ix) of Definition~\ref{def:pkg} absorb it: what an instance now proves, in proving those
+requirements, is exactly what it used to prove afterwards.
 
 \begin{remark}[The second obligation]
   \label{rem:crit-spec}
@@ -581,11 +585,11 @@ not remove.
   direct sums (the period because the comparison isomorphism is block diagonal, so its
   determinant is the product); the value field of a sum is the compositum; and the
   archimedean factor of a sum is the product of the factors. Of the requirements of
-  Definition~\ref{def:pkg}, (vii) and (viii) hold componentwise, (viii) because $\sigma_{*}$ on subfields
+  Definition~\ref{def:pkg}, (viii) and (ix) hold componentwise, (ix) because $\sigma_{*}$ on subfields
   is a left adjoint (to $\sigma^{*}$) and therefore preserves joins, which is mathlib's
-  \lean{IntermediateField.map\_sup}; (ix) because a compositum of algebraic intermediate fields
+  \lean{IntermediateField.map\_sup}; (x) because a compositum of algebraic intermediate fields
   lies in $\Qbar$;
-  and (x) because a product of nonzero periods is nonzero.
+  and (xi) because a product of nonzero periods is nonzero.
 
   Criticality is no longer among the choices: it is computed from $\gamma$, and since a product is
   nonzero exactly when both factors are, $n$ is critical for $M_1 \oplus M_2$ if and only if it is

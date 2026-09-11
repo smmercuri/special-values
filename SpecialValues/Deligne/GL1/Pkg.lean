@@ -46,10 +46,11 @@ noncomputable def pkg (N : ℕ) [NeZero N] :
     Pkg {χ : DirichletCharacter ℂ N // χ.IsPrimitive} where
   L χ := DirichletCharacter.LFunction χ.1
   valueField χ := valueField χ.1
-  weight := 0
+  weight _ := 0
   gammaShifts χ := if χ.1.Even then {0} else {1}
   period χ n := period χ.1 n
   galoisAction := galoisAction
+  weight_galoisAction _ _ := rfl
   gammaShifts_galoisAction σ χ := by simp [galoisAction]
   valueField_galoisAction σ χ := valueField_galoisConj σ χ.1
   valueField_isAlgebraic χ _ hx := isAlgebraic_of_mem_valueField χ.1 hx
@@ -84,7 +85,8 @@ lemma gammaFactor_pkg [NeZero N]
 
 /-- The GL(1) package has weight `0`, so the functional equation exchanges `n` and `1 - n`. -/
 @[simp]
-lemma weight_pkg [NeZero N] : (pkg N).weight = 0 := rfl
+lemma weight_pkg [NeZero N] (M : {χ : DirichletCharacter ℂ N // χ.IsPrimitive}) :
+    (pkg N).weight M = 0 := rfl
 
 /-- The framework's criticality predicate, computed from the Gamma factor, is the explicit
 condition of `Deligne.GL1.IsCritical`. -/

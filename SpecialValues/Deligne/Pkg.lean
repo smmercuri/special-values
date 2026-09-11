@@ -127,8 +127,8 @@ structure Pkg (Ω : Type*) where
   L : Ω → ℂ → ℂ
   /-- The value field `E(M)`. -/
   valueField : Ω → IntermediateField ℚ ℂ
-  /-- The weight `w`: the functional equation exchanges `s` and `w + 1 - s`. -/
-  weight : ℤ
+  /-- The weight `w(M)`: the functional equation exchanges `s` and `w(M) + 1 - s`. -/
+  weight : Ω → ℤ
   /-- The shifts of the archimedean Gamma factor, `γ(M, s) = ∏ a, Γℝ(s + a)` with `a` ranging over
   `gammaShifts M` with multiplicity. Supplying the shifts rather than a bare function `ℂ → ℂ` is
   what makes `Deligne.Pkg.IsCritical` genuinely computed; see
@@ -138,7 +138,9 @@ structure Pkg (Ω : Type*) where
   period : Ω → ℤ → ℂ
   /-- The Galois action `σ ↦ (M ↦ Mᵟ)`. -/
   galoisAction : Gal(ℂ/ℚ) →* Equiv.Perm Ω
-  /-- Conjugate motives have the same Hodge numbers. -/
+  /-- Conjugate objects have the same weight. -/
+  weight_galoisAction (σ : Gal(ℂ/ℚ)) (M : Ω) : weight (galoisAction σ M) = weight M
+  /-- Conjugate objects have the same Hodge numbers. -/
   gammaShifts_galoisAction (σ : Gal(ℂ/ℚ)) (M : Ω) :
     gammaShifts (galoisAction σ M) = gammaShifts M
   /-- The value field transports along the action. -/
@@ -152,7 +154,7 @@ structure Pkg (Ω : Type*) where
   -- hypothesis prevents the junk case `· / 0 = 0 ∈ valueField`.
   period_ne_zero' (M : Ω) (n : ℤ)
     (h₁ : ∀ a ∈ gammaShifts M, Odd (n + a) ∨ 0 < n + a)
-    (h₂ : ∀ a ∈ gammaShifts M, Odd (weight + 1 - n + a) ∨ 0 < weight + 1 - n + a) :
+    (h₂ : ∀ a ∈ gammaShifts M, Odd (weight M + 1 - n + a) ∨ 0 < weight M + 1 - n + a) :
     period M n ≠ 0
 
 namespace Pkg
@@ -167,14 +169,14 @@ noncomputable def gammaFactor (M : Ω) (s : ℂ) : ℂ :=
 points exchanged by the functional equation. -/
 def IsCritical (M : Ω) (n : ℤ) : Prop :=
   0 ≤ meromorphicOrderAt (F.gammaFactor M) (n : ℂ) ∧
-    0 ≤ meromorphicOrderAt (F.gammaFactor M) ((F.weight + 1 - n : ℤ) : ℂ)
+    0 ≤ meromorphicOrderAt (F.gammaFactor M) ((F.weight M + 1 - n : ℤ) : ℂ)
 
 /-- Criticality written out as a condition on the shifts and the weight alone: `Γℝ` has poles
 exactly at the non-positive even integers, so `γ(M, ·)` is regular at an integer `m` exactly when
 `m + a` is odd or positive for every shift `a`. -/
 lemma isCritical_iff (M : Ω) (n : ℤ) :
     F.IsCritical M n ↔ (∀ a ∈ F.gammaShifts M, Odd (n + a) ∨ 0 < n + a) ∧
-      ∀ a ∈ F.gammaShifts M, Odd (F.weight + 1 - n + a) ∨ 0 < F.weight + 1 - n + a := by
+      ∀ a ∈ F.gammaShifts M, Odd (F.weight M + 1 - n + a) ∨ 0 < F.weight M + 1 - n + a := by
   have hgf : F.gammaFactor M = Complex.prodGammaℝ (F.gammaShifts M) := rfl
   simp only [IsCritical, hgf, Complex.meromorphicOrderAt_prodGammaℝ_intCast_nonneg_iff]
 
@@ -184,7 +186,7 @@ is even, and `Γℝ` has a pole at every non-positive even integer, so regularit
 already forces `1 ≤ t`. Apply that at `t = n` and at `t = w + 1 - n`. -/
 theorem isCritical_le_weight {M : Ω} (h₀ : (0 : ℤ) ∈ F.gammaShifts M)
     (h₁ : (1 : ℤ) ∈ F.gammaShifts M) {n : ℤ} (hn : F.IsCritical M n) :
-    1 ≤ n ∧ n ≤ F.weight := by
+    1 ≤ n ∧ n ≤ F.weight M := by
   rw [isCritical_iff] at hn
   obtain ⟨hl, hr⟩ := hn
   have a₀ := hl 0 h₀
@@ -220,7 +222,7 @@ abbrev Conjecture (M : Ω) : Prop := F.IsArithmetic M ∧ F.IsEquivariant M
 shifts. -/
 lemma isCritical_galoisAction_iff (σ : Gal(ℂ/ℚ)) (M : Ω) (n : ℤ) :
     F.IsCritical (F.galoisAction σ M) n ↔ F.IsCritical M n := by
-  simp only [isCritical_iff, F.gammaShifts_galoisAction]
+  simp only [isCritical_iff, F.gammaShifts_galoisAction, F.weight_galoisAction]
 
 /-! ### Nondegeneracy -/
 
@@ -309,7 +311,7 @@ is left free to carry whatever period it likes off that set. See `blueprint/src/
 variable {F' : Pkg Ω} {M : Ω}
 
 /-- Criticality depends on the package only through its weight and its shifts. -/
-lemma isCritical_congr (hw : F'.weight = F.weight) (hs : F'.gammaShifts M = F.gammaShifts M)
+lemma isCritical_congr (hw : F'.weight M = F.weight M) (hs : F'.gammaShifts M = F.gammaShifts M)
     (n : ℤ) : F'.IsCritical M n ↔ F.IsCritical M n := by
   simp only [isCritical_iff, hw, hs]
 
@@ -322,7 +324,7 @@ lemma normalizedValue_of_rat_smul {n : ℤ} {q q' : ℚ} (hL : F'.L M n = q • 
 
 /-- Algebraicity at `M` is insensitive to rescaling the normalised value by a rational that is
 nonzero at every critical integer. -/
-theorem isArithmetic_congr_of_rat_smul {r : ℤ → ℚ} (hw : F'.weight = F.weight)
+theorem isArithmetic_congr_of_rat_smul {r : ℤ → ℚ} (hw : F'.weight M = F.weight M)
     (hs : F'.gammaShifts M = F.gammaShifts M) (hE : F'.valueField M = F.valueField M)
     (hr : ∀ n, F.IsCritical M n → r n ≠ 0)
     (hv : ∀ n, F.IsCritical M n → F'.normalizedValue M n = r n • F.normalizedValue M n) :
@@ -334,7 +336,7 @@ theorem isArithmetic_congr_of_rat_smul {r : ℤ → ℚ} (hw : F'.weight = F.wei
 
 /-- Equivariance at `M` is insensitive to rescaling the normalised value by a rational that is
 nonzero at every critical integer, provided it is constant on the Galois orbit of `M` there. -/
-theorem isEquivariant_congr_of_rat_smul {r : Ω → ℤ → ℚ} (hw : F'.weight = F.weight)
+theorem isEquivariant_congr_of_rat_smul {r : Ω → ℤ → ℚ} (hw : F'.weight M = F.weight M)
     (hs : F'.gammaShifts M = F.gammaShifts M)
     (hgal : ∀ σ : Gal(ℂ/ℚ), F'.galoisAction σ M = F.galoisAction σ M)
     (hr : ∀ n, F.IsCritical M n → r M n ≠ 0)
@@ -350,7 +352,7 @@ theorem isEquivariant_congr_of_rat_smul {r : Ω → ℤ → ℚ} (hw : F'.weight
 
 /-- Deligne's conjecture at `M` is insensitive to rescaling the normalised value by a rational
 that is nonzero at every critical integer and constant on the Galois orbit of `M` there. -/
-theorem conjecture_congr_of_rat_smul {r : Ω → ℤ → ℚ} (hw : F'.weight = F.weight)
+theorem conjecture_congr_of_rat_smul {r : Ω → ℤ → ℚ} (hw : F'.weight M = F.weight M)
     (hs : F'.gammaShifts M = F.gammaShifts M) (hE : F'.valueField M = F.valueField M)
     (hgal : ∀ σ : Gal(ℂ/ℚ), F'.galoisAction σ M = F.galoisAction σ M)
     (hr : ∀ n, F.IsCritical M n → r M n ≠ 0)
@@ -363,88 +365,93 @@ theorem conjecture_congr_of_rat_smul {r : Ω → ℤ → ℚ} (hw : F'.weight = 
 
 /-! ### Direct sums -/
 
-/-- The direct sum of two Deligne packages, which requires them to have a common weight: the
+/-- The direct sum of two Deligne packages, on the pairs of objects of a common weight: the
 functional equation of a product `Λ₁ · Λ₂` exchanges `s` and `w + 1 - s` only when the two
 factors reflect about the same point. The value field is taken to be the compositum, which is a
 choice: the value object of a direct sum is properly the ring `E₁ × E₂`, which `valueField`
 cannot express. -/
-noncomputable def sum (F₁ : Pkg Ω₁) (F₂ : Pkg Ω₂) (hw : F₁.weight = F₂.weight) :
-    Pkg (Ω₁ × Ω₂) where
-  L M s := F₁.L M.1 s * F₂.L M.2 s
-  valueField M := F₁.valueField M.1 ⊔ F₂.valueField M.2
-  weight := F₁.weight
-  gammaShifts M := F₁.gammaShifts M.1 + F₂.gammaShifts M.2
-  period M n := F₁.period M.1 n * F₂.period M.2 n
+noncomputable def sum (F₁ : Pkg Ω₁) (F₂ : Pkg Ω₂) :
+    Pkg {M : Ω₁ × Ω₂ // F₁.weight M.1 = F₂.weight M.2} where
+  L M s := F₁.L M.1.1 s * F₂.L M.1.2 s
+  valueField M := F₁.valueField M.1.1 ⊔ F₂.valueField M.1.2
+  weight M := F₁.weight M.1.1
+  gammaShifts M := F₁.gammaShifts M.1.1 + F₂.gammaShifts M.1.2
+  period M n := F₁.period M.1.1 n * F₂.period M.1.2 n
   galoisAction :=
-    { toFun := fun σ ↦ (F₁.galoisAction σ).prodCongr (F₂.galoisAction σ)
+    { toFun := fun σ ↦ ((F₁.galoisAction σ).prodCongr (F₂.galoisAction σ)).subtypeEquiv
+        fun M ↦ by simp [F₁.weight_galoisAction, F₂.weight_galoisAction]
       map_one' := by ext M <;> simp
       map_mul' := fun σ τ ↦ by ext M <;> simp }
+  weight_galoisAction σ M := F₁.weight_galoisAction σ M.1.1
   gammaShifts_galoisAction σ M := by
     simp [F₁.gammaShifts_galoisAction, F₂.gammaShifts_galoisAction]
   valueField_galoisAction σ M := by
     simp [F₁.valueField_galoisAction, F₂.valueField_galoisAction, IntermediateField.map_sup]
   valueField_isAlgebraic M _ :=
     IntermediateField.forall_isAlgebraic_iff_le.mpr (sup_le
-      (IntermediateField.forall_isAlgebraic_iff_le.mp fun _ ↦ F₁.valueField_isAlgebraic M.1)
-      (IntermediateField.forall_isAlgebraic_iff_le.mp fun _ ↦ F₂.valueField_isAlgebraic M.2)) _
+      (IntermediateField.forall_isAlgebraic_iff_le.mp fun _ ↦ F₁.valueField_isAlgebraic M.1.1)
+      (IntermediateField.forall_isAlgebraic_iff_le.mp fun _ ↦ F₂.valueField_isAlgebraic M.1.2)) _
   period_ne_zero' M n h₁ h₂ := by
     simp only [Multiset.mem_add, or_imp, forall_and] at h₁ h₂
     exact mul_ne_zero (F₁.period_ne_zero' _ n h₁.1 h₂.1)
-      (F₂.period_ne_zero' _ n h₁.2 (hw ▸ h₂.2))
+      (F₂.period_ne_zero' _ n h₁.2 (M.2 ▸ h₂.2))
 
-variable {F₁ : Pkg Ω₁} {F₂ : Pkg Ω₂} {M₁ : Ω₁} {M₂ : Ω₂} (hw : F₁.weight = F₂.weight)
-
-@[simp]
-lemma weight_sum : (F₁.sum F₂ hw).weight = F₁.weight := rfl
+variable {F₁ : Pkg Ω₁} {F₂ : Pkg Ω₂} {M₁ : Ω₁} {M₂ : Ω₂}
 
 @[simp]
-lemma L_sum (M : Ω₁ × Ω₂) (s : ℂ) : (F₁.sum F₂ hw).L M s = F₁.L M.1 s * F₂.L M.2 s := rfl
+lemma weight_sum (M : {M : Ω₁ × Ω₂ // F₁.weight M.1 = F₂.weight M.2}) :
+    (F₁.sum F₂).weight M = F₁.weight M.1.1 := rfl
 
 @[simp]
-lemma normalizedValue_sum (M : Ω₁ × Ω₂) (n : ℤ) :
-    (F₁.sum F₂ hw).normalizedValue M n = F₁.normalizedValue M.1 n * F₂.normalizedValue M.2 n :=
+lemma L_sum (M : {M : Ω₁ × Ω₂ // F₁.weight M.1 = F₂.weight M.2}) (s : ℂ) :
+    (F₁.sum F₂).L M s = F₁.L M.1.1 s * F₂.L M.1.2 s := rfl
+
+@[simp]
+lemma normalizedValue_sum (M : {M : Ω₁ × Ω₂ // F₁.weight M.1 = F₂.weight M.2}) (n : ℤ) :
+    (F₁.sum F₂).normalizedValue M n
+      = F₁.normalizedValue M.1.1 n * F₂.normalizedValue M.1.2 n :=
   (div_mul_div_comm _ _ _ _).symm
 
 @[simp]
-lemma valueField_sum (M : Ω₁ × Ω₂) :
-    (F₁.sum F₂ hw).valueField M = F₁.valueField M.1 ⊔ F₂.valueField M.2 :=
+lemma valueField_sum (M : {M : Ω₁ × Ω₂ // F₁.weight M.1 = F₂.weight M.2}) :
+    (F₁.sum F₂).valueField M = F₁.valueField M.1.1 ⊔ F₂.valueField M.1.2 :=
   rfl
 
 @[simp]
-lemma gammaFactor_sum (M : Ω₁ × Ω₂) (s : ℂ) :
-    (F₁.sum F₂ hw).gammaFactor M s = F₁.gammaFactor M.1 s * F₂.gammaFactor M.2 s :=
+lemma gammaFactor_sum (M : {M : Ω₁ × Ω₂ // F₁.weight M.1 = F₂.weight M.2}) (s : ℂ) :
+    (F₁.sum F₂).gammaFactor M s = F₁.gammaFactor M.1.1 s * F₂.gammaFactor M.1.2 s :=
   Complex.prodGammaℝ_add _ _ s
 
 /-- Criticality for a direct sum is criticality for both summands. -/
-lemma isCritical_sum_iff (M : Ω₁ × Ω₂) (n : ℤ) :
-    (F₁.sum F₂ hw).IsCritical M n ↔ F₁.IsCritical M.1 n ∧ F₂.IsCritical M.2 n := by
-  simp only [isCritical_iff, weight_sum, hw, show (F₁.sum F₂ hw).gammaShifts M
-    = F₁.gammaShifts M.1 + F₂.gammaShifts M.2 from rfl, Multiset.mem_add, or_imp, forall_and]
+lemma isCritical_sum_iff (M : {M : Ω₁ × Ω₂ // F₁.weight M.1 = F₂.weight M.2}) (n : ℤ) :
+    (F₁.sum F₂).IsCritical M n ↔ F₁.IsCritical M.1.1 n ∧ F₂.IsCritical M.1.2 n := by
+  simp only [isCritical_iff, weight_sum, M.2, show (F₁.sum F₂).gammaShifts M
+    = F₁.gammaShifts M.1.1 + F₂.gammaShifts M.1.2 from rfl, Multiset.mem_add, or_imp, forall_and]
   tauto
 
 @[simp]
-lemma galoisAction_sum (σ : Gal(ℂ/ℚ)) (M : Ω₁ × Ω₂) :
-    (F₁.sum F₂ hw).galoisAction σ M = (F₁.galoisAction σ M.1, F₂.galoisAction σ M.2) :=
+lemma coe_galoisAction_sum (σ : Gal(ℂ/ℚ)) (M : {M : Ω₁ × Ω₂ // F₁.weight M.1 = F₂.weight M.2}) :
+    ((F₁.sum F₂).galoisAction σ M).1 = (F₁.galoisAction σ M.1.1, F₂.galoisAction σ M.1.2) :=
   rfl
 
-theorem IsArithmetic.sum (h₁ : F₁.IsArithmetic M₁) (h₂ : F₂.IsArithmetic M₂) :
-    (F₁.sum F₂ hw).IsArithmetic (M₁, M₂) := fun n hn ↦ by
-  obtain ⟨hn₁, hn₂⟩ := (isCritical_sum_iff hw (M₁, M₂) n).mp hn
+theorem IsArithmetic.sum (hw : F₁.weight M₁ = F₂.weight M₂) (h₁ : F₁.IsArithmetic M₁)
+    (h₂ : F₂.IsArithmetic M₂) : (F₁.sum F₂).IsArithmetic ⟨(M₁, M₂), hw⟩ := fun n hn ↦ by
+  obtain ⟨hn₁, hn₂⟩ := (isCritical_sum_iff ⟨(M₁, M₂), hw⟩ n).mp hn
   rw [normalizedValue_sum, valueField_sum]
   exact mul_mem (le_sup_left (a := F₁.valueField M₁) (h₁ n hn₁))
     (le_sup_right (b := F₂.valueField M₂) (h₂ n hn₂))
 
-theorem IsEquivariant.sum (h₁ : F₁.IsEquivariant M₁) (h₂ : F₂.IsEquivariant M₂) :
-    (F₁.sum F₂ hw).IsEquivariant (M₁, M₂) := fun σ n hn ↦ by
-  obtain ⟨hn₁, hn₂⟩ := (isCritical_sum_iff hw (M₁, M₂) n).mp hn
-  rw [normalizedValue_sum, map_mul, h₁ σ n hn₁, h₂ σ n hn₂, galoisAction_sum,
-    normalizedValue_sum]
+theorem IsEquivariant.sum (hw : F₁.weight M₁ = F₂.weight M₂) (h₁ : F₁.IsEquivariant M₁)
+    (h₂ : F₂.IsEquivariant M₂) : (F₁.sum F₂).IsEquivariant ⟨(M₁, M₂), hw⟩ := fun σ n hn ↦ by
+  obtain ⟨hn₁, hn₂⟩ := (isCritical_sum_iff ⟨(M₁, M₂), hw⟩ n).mp hn
+  rw [normalizedValue_sum, map_mul, h₁ σ n hn₁, h₂ σ n hn₂, normalizedValue_sum,
+    coe_galoisAction_sum]
 
 -- `Conjecture` is an `abbrev` for a conjunction, so its head unfolds to `And`: dot notation
 -- `h.sum` does not resolve to this lemma. The two halves below are reached through
 -- `IsArithmetic` and `IsEquivariant`, which are plain `def`s and do resolve.
-theorem Conjecture.sum (h₁ : F₁.Conjecture M₁) (h₂ : F₂.Conjecture M₂) :
-    (F₁.sum F₂ hw).Conjecture (M₁, M₂) :=
+theorem Conjecture.sum (hw : F₁.weight M₁ = F₂.weight M₂) (h₁ : F₁.Conjecture M₁)
+    (h₂ : F₂.Conjecture M₂) : (F₁.sum F₂).Conjecture ⟨(M₁, M₂), hw⟩ :=
   ⟨IsArithmetic.sum hw h₁.1 h₂.1, IsEquivariant.sum hw h₁.2 h₂.2⟩
 
 /-! ### Galois descent -/

@@ -26,7 +26,7 @@ Mathlib records the dichotomy as \lean{DirichletCharacter.Even} ($\delta = 0$) a
   \lean{Deligne.GL1.isAlgebraic\_of\_mem\_valueField}
   \leanok
   \uses{def:valueField, lem:values-algebraic}
-  Every element of $\Q(\chi)$ is algebraic over $\Q$, which is requirement (ix) of
+  Every element of $\Q(\chi)$ is algebraic over $\Q$, which is requirement (x) of
   Definition~\ref{def:pkg}.
 \end{lemma}
 \begin{proof}
@@ -156,8 +156,8 @@ structure that becomes the $\omega^{\pm}$ bookkeeping for GL(2).
 
 The next three lemmas are the obligations Definition~\ref{def:pkg} and \S\ref{sec:guards}
 impose. They sit at different depths, and the difference is the subject of
-Remark~\ref{rem:not-a-pkg}: Lemma~\ref{lem:gl1-period-ne-zero} discharges requirement (x)
-and Lemma~\ref{lem:values-algebraic} requirement (ix), both fields of the structure, so without
+Remark~\ref{rem:not-a-pkg}: Lemma~\ref{lem:gl1-period-ne-zero} discharges requirement (xi)
+and Lemma~\ref{lem:values-algebraic} requirement (x), both fields of the structure, so without
 them Definition~\ref{def:gl1-pkg} does not typecheck at all; and
 Lemma~\ref{lem:gl1-nondegenerate} discharges
 Definition~\ref{def:hasCriticalInteger}, a predicate proved about the package afterwards, so
@@ -179,7 +179,7 @@ without it the package still exists but says nothing at any object.
   \lean{DirichletCharacter.even_or_odd}.
 \end{proof}
 
-\begin{lemma}[Requirement (x): the period does not vanish]
+\begin{lemma}[Requirement (xi): the period does not vanish]
   \label{lem:gl1-period-ne-zero}
   \lean{Deligne.GL1.period\_ne\_zero}
   \leanok
@@ -196,7 +196,7 @@ without it the package still exists but says nothing at any object.
   $(2\pi i)^{n} \neq 0$ since $\pi \neq 0$ and $i \neq 0$, an integer power of a
   nonzero complex number being nonzero.
 
-  The statement is deliberately stronger than requirement (x) demands --- it drops the
+  The statement is deliberately stronger than requirement (xi) demands --- it drops the
   criticality hypothesis, which the proof never uses. Making it unconditional keeps the
   lemma independent of Definition~\ref{def:gl1-critical}, so a later change to the
   critical set cannot break the package's definition.
@@ -308,7 +308,7 @@ postponed: it is what the other half is proved from.
   \lean{PadicLFunctions.hurwitzZeta\_neg\_nat\_of\_mem\_Ioo}
   \leanok
   For every $k \in \N$ and every real $x$ with $0 < x < 1$,
-  \[ \zeta_H(x,-k) \;=\; \frac{-1}{k+1}\, B_{k+1}(x). \]
+  \[ \zeta_H(x,-k) \;=\; \frac{-1}{k+1}\, B_{k+1}(xi). \]
 \end{lemma}
 \begin{proof}
   \uses{lem:hurwitzZetaOdd-zero}
@@ -321,7 +321,7 @@ postponed: it is what the other half is proved from.
   \[ \zeta_H^{\mathrm{even}}(x,0) = \begin{cases} -1/2 & x \equiv 0, \\ 0 & \text{otherwise},\end{cases} \]
   and $x \in (0,1)$ gives $x \not\equiv 0$ in $\R/\Z$, so the even part vanishes.
   Lemma~\ref{lem:hurwitzZetaOdd-zero} supplies the odd part, and
-  $B_1(x) = x - 1/2$ (\lean{Polynomial.bernoulli\_one}) finishes.
+  $B_1(xi) = x - 1/2$ (\lean{Polynomial.bernoulli\_one}) finishes.
 
   The restriction to the \emph{open} interval is essential and not a technicality:
   at $x = 0$ the identity genuinely fails, since
@@ -758,7 +758,7 @@ mathlib's functional equation, not an independent argument.
   \uses{def:galoisConj, def:gl1-critical, def:valueField}
   For every $\sigma \in \operatorname{Gal}(\C/\Q)$, $\chi^{\sigma}$ has the parity of $\chi$,
   hence the same critical set, and $\Q(\chi^{\sigma}) = \sigma(\Q(\chi))$. These are
-  requirements (vii) and (viii) of Definition~\ref{def:pkg} for the package below.
+  requirements (viii) and (ix) of Definition~\ref{def:pkg} for the package below.
 \end{lemma}
 \begin{proof}
   \leanok
@@ -786,9 +786,10 @@ mathlib's functional equation, not an independent argument.
   $\chi$ odd, a single $\Gamma_{\R}$ because the Hodge type is $(0,0)$. The archimedean factor
   that results is mathlib's own \lean{DirichletCharacter.gammaFactor}
   (Lemma~\ref{lem:gl1-gammaFactor-pkg}), and the critical set is computed from it --- see
-  Lemma~\ref{lem:gl1-crit-pkg}. Of the requirements of Definition~\ref{def:pkg}, (vii) and
-  (viii) are Lemma~\ref{lem:gl1-galois-transport}, (ix) is Lemma~\ref{lem:valueField-algebraic}
-  and (x) is Lemma~\ref{lem:gl1-period-ne-zero}; nondegeneracy is
+  Lemma~\ref{lem:gl1-crit-pkg}. Of the requirements of Definition~\ref{def:pkg}, (vii) is
+  trivial, the weight being constant, (viii) and (ix) are Lemma~\ref{lem:gl1-galois-transport},
+  (x) is Lemma~\ref{lem:valueField-algebraic}
+  and (xi) is Lemma~\ref{lem:gl1-period-ne-zero}; nondegeneracy is
   Lemma~\ref{lem:gl1-nondegenerate}, proved about the package rather than built into it.
 \end{definition}
 
@@ -799,7 +800,7 @@ mathlib's functional equation, not an independent argument.
   \uses{def:gl1-pkg}
   For every primitive $\chi$ modulo $N$ and every $s \in \C$, the archimedean factor
   $\prod_{a} \Gamma_{\R}(s+a)$ determined by the shifts of Definition~\ref{def:gl1-pkg} is
-  \lean{DirichletCharacter.gammaFactor} $\chi\, s$, and the package's weight is $0$.
+  \lean{DirichletCharacter.gammaFactor} $\chi\, s$, and the weight of every object is $0$.
 \end{lemma}
 \begin{proof}
   \leanok
