@@ -4,8 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Salvatore Mercuri
 -/
 import SpecialValues.Deligne.Gamma
-import Mathlib.Algebra.BigOperators.Group.Finset.Defs
-import Mathlib.Algebra.Module.Rat
 import Mathlib.FieldTheory.AlgebraicClosure
 import Mathlib.FieldTheory.Galois.Notation
 import Mathlib.FieldTheory.IntermediateField.Adjoin.Defs
@@ -56,39 +54,22 @@ invertible, with inverse `galoisAction σ⁻¹`.
   of `M`.
 * `Deligne.Pkg.IsArithmetic.isEquivariant_of_valueField_eq_bot`: over the value field `ℚ`,
   equivariance follows from algebraicity.
-* `Deligne.Pkg.sum`: the direct sum of two packages.
-* `Deligne.Pkg.map_prod_normalizedValue`: the product of the normalised values over a family
-  the Galois action permutes is fixed by every automorphism of `ℂ`.
-* `Deligne.Pkg.conjecture_congr_of_rat_smul`: the conjecture at `M` is unchanged when `L` and
-  the period are rescaled, at the critical integers, by nonzero rationals, together with its two
-  halves `Deligne.Pkg.isArithmetic_congr_of_rat_smul` and
-  `Deligne.Pkg.isEquivariant_congr_of_rat_smul`.
 
 ## Design notes
 
 The design arguments — why the `L`-function is a field although
-`Deligne.Pkg.conjecture_of_period_eq_mul_L` shows no field law can stop a period being defined from
-it, why nondegeneracy is a predicate
-(`Deligne.Pkg.HasCriticalInteger`) rather than a field, why the value field is bounded by
-`valueField_isAlgebraic` and what `Deligne.Pkg.sum` and Galois descent do and do not reach — are
-set out in `blueprint/src/framework.tex`, §§`sec:no-L-field`, `sec:guards`, `sec:direct-sums`
-and `sec:descent`. The one obligation the framework cannot state is recorded here: every instance
-proves `Deligne.Pkg.HasCriticalInteger` alongside its main theorem, together with a
-characterisation theorem identifying its `IsCritical` with an independently and concretely
-specified condition, stated without reference to this framework.
+`Deligne.Pkg.conjecture_of_period_eq_mul_L` shows no field law can stop a period being defined
+from it, why nondegeneracy is a predicate (`Deligne.Pkg.HasCriticalInteger`) rather than a field,
+and why the value field is bounded by `valueField_isAlgebraic` — are set out in
+`blueprint/src/framework.tex`, §§`sec:no-L-field` and `sec:guards`. Direct sums of packages,
+Galois descent and rescaling by rationals live on the `pkg-extras` branch. The one obligation
+the framework cannot state is recorded here: every instance proves
+`Deligne.Pkg.HasCriticalInteger` alongside its main theorem, together with a characterisation
+theorem identifying its `IsCritical` with an independently and concretely specified condition,
+stated without reference to this framework.
 -/
 
 /-! ### Intermediate fields and the rationals -/
-
-/-- Membership in a subfield is unchanged by scaling by a nonzero rational. The `CharZero`
-hypothesis is load-bearing: over `F₂` the rational `1 / 2` is nonzero but casts to `0`, so
-`q • x = 0` lies in every subfield. -/
-theorem SubfieldClass.qsmul_mem_iff {S K : Type*} [DivisionRing K] [CharZero K] [SetLike S K]
-    [SubfieldClass S K] (s : S) {q : ℚ} (hq : q ≠ 0) {x : K} : q • x ∈ s ↔ x ∈ s := by
-  refine ⟨fun h ↦ ?_, SubfieldClass.qsmul_mem s q⟩
-  have hx := SubfieldClass.qsmul_mem s q⁻¹ h
-  rwa [Rat.smul_def, Rat.smul_def, ← mul_assoc, ← Rat.cast_mul, inv_mul_cancel₀ hq,
-    Rat.cast_one, one_mul] at hx
 
 namespace IntermediateField
 
@@ -159,7 +140,7 @@ structure Pkg (Ω : Type*) where
 
 namespace Pkg
 
-variable {Ω Ω₁ Ω₂ : Type*} {F : Pkg Ω}
+variable {Ω : Type*} {F : Pkg Ω}
 
 /-- The archimedean Gamma factor `γ(M, s) = ∏ a, Γℝ(s + a)`, determined by the shifts. -/
 noncomputable def gammaFactor (M : Ω) (s : ℂ) : ℂ :=
@@ -293,189 +274,6 @@ theorem IsArithmetic.isEquivariant_of_valueField_eq_bot {M : Ω} (h : F.IsArithm
   refine IntermediateField.apply_eq_self_of_mem_bot (σ : ℂ →ₐ[ℚ] ℂ) ?_
   rw [← hE]
   exact h n hn
-
-/-! ### Rescaling by a rational
-
-Deligne's period is defined only up to `E(M)ˣ`, and the incomplete `L`-function differs from
-the complete one by a rational at a critical integer. The conjecture is stated as a membership
-so as not to see either. This section is that invariance, and it is exactly `ℚˣ` wide: a factor
-of `π` changes the truth value.
-
-The three lemmas ask for their rescaling identities at the *critical* integers only, and that
-is deliberate: `Deligne.Pkg.IsArithmetic` and `Deligne.Pkg.IsEquivariant` quantify over the
-critical set alone, so the restricted hypothesis is the weakest one that suffices, and a package
-is left free to carry whatever period it likes off that set. See `blueprint/src/framework.tex`
-§`rem:rescale-critical-only`.
--/
-
-variable {F' : Pkg Ω} {M : Ω}
-
-/-- Criticality depends on the package only through its weight and its shifts. -/
-lemma isCritical_congr (hw : F'.weight M = F.weight M) (hs : F'.gammaShifts M = F.gammaShifts M)
-    (n : ℤ) : F'.IsCritical M n ↔ F.IsCritical M n := by
-  simp only [isCritical_iff, hw, hs]
-
-/-- Rescaling `L` and the period by rationals rescales the normalised value by their ratio. -/
-lemma normalizedValue_of_rat_smul {n : ℤ} {q q' : ℚ} (hL : F'.L M n = q • F.L M n)
-    (hc : F'.period M n = q' • F.period M n) :
-    F'.normalizedValue M n = (q / q') • F.normalizedValue M n := by
-  simp only [normalizedValue, hL, hc, Rat.smul_def, Rat.cast_div]
-  ring
-
-/-- Algebraicity at `M` is insensitive to rescaling the normalised value by a rational that is
-nonzero at every critical integer. -/
-theorem isArithmetic_congr_of_rat_smul {r : ℤ → ℚ} (hw : F'.weight M = F.weight M)
-    (hs : F'.gammaShifts M = F.gammaShifts M) (hE : F'.valueField M = F.valueField M)
-    (hr : ∀ n, F.IsCritical M n → r n ≠ 0)
-    (hv : ∀ n, F.IsCritical M n → F'.normalizedValue M n = r n • F.normalizedValue M n) :
-    F'.IsArithmetic M ↔ F.IsArithmetic M := by
-  simp only [IsArithmetic, isCritical_congr hw hs, hE]
-  refine forall_congr' fun n ↦ imp_congr_right fun hn ↦ ?_
-  rw [hv n hn]
-  exact SubfieldClass.qsmul_mem_iff _ (hr n hn)
-
-/-- Equivariance at `M` is insensitive to rescaling the normalised value by a rational that is
-nonzero at every critical integer, provided it is constant on the Galois orbit of `M` there. -/
-theorem isEquivariant_congr_of_rat_smul {r : Ω → ℤ → ℚ} (hw : F'.weight M = F.weight M)
-    (hs : F'.gammaShifts M = F.gammaShifts M)
-    (hgal : ∀ σ : Gal(ℂ/ℚ), F'.galoisAction σ M = F.galoisAction σ M)
-    (hr : ∀ n, F.IsCritical M n → r M n ≠ 0)
-    (hv : ∀ (N : Ω) (n : ℤ), F.IsCritical M n →
-      F'.normalizedValue N n = r N n • F.normalizedValue N n)
-    (hinv : ∀ (σ : Gal(ℂ/ℚ)) (n : ℤ), F.IsCritical M n → r (F.galoisAction σ M) n = r M n) :
-    F'.IsEquivariant M ↔ F.IsEquivariant M := by
-  simp only [IsEquivariant, isCritical_congr hw hs]
-  refine forall_congr' fun σ ↦ forall_congr' fun n ↦ imp_congr_right fun hn ↦ ?_
-  rw [hgal σ, hv M n hn, hv (F.galoisAction σ M) n hn, hinv σ n hn, Rat.smul_def, Rat.smul_def,
-    map_mul, map_ratCast]
-  exact mul_right_inj' (Rat.cast_ne_zero.mpr (hr n hn))
-
-/-- Deligne's conjecture at `M` is insensitive to rescaling the normalised value by a rational
-that is nonzero at every critical integer and constant on the Galois orbit of `M` there. -/
-theorem conjecture_congr_of_rat_smul {r : Ω → ℤ → ℚ} (hw : F'.weight M = F.weight M)
-    (hs : F'.gammaShifts M = F.gammaShifts M) (hE : F'.valueField M = F.valueField M)
-    (hgal : ∀ σ : Gal(ℂ/ℚ), F'.galoisAction σ M = F.galoisAction σ M)
-    (hr : ∀ n, F.IsCritical M n → r M n ≠ 0)
-    (hv : ∀ (N : Ω) (n : ℤ), F.IsCritical M n →
-      F'.normalizedValue N n = r N n • F.normalizedValue N n)
-    (hinv : ∀ (σ : Gal(ℂ/ℚ)) (n : ℤ), F.IsCritical M n → r (F.galoisAction σ M) n = r M n) :
-    F'.Conjecture M ↔ F.Conjecture M :=
-  and_congr (isArithmetic_congr_of_rat_smul hw hs hE hr (hv M))
-    (isEquivariant_congr_of_rat_smul hw hs hgal hr hv hinv)
-
-/-! ### Direct sums -/
-
-/-- The direct sum of two Deligne packages, on the pairs of objects of a common weight: the
-functional equation of a product `Λ₁ · Λ₂` exchanges `s` and `w + 1 - s` only when the two
-factors reflect about the same point. The value field is taken to be the compositum, which is a
-choice: the value object of a direct sum is properly the ring `E₁ × E₂`, which `valueField`
-cannot express. -/
-noncomputable def sum (F₁ : Pkg Ω₁) (F₂ : Pkg Ω₂) :
-    Pkg {M : Ω₁ × Ω₂ // F₁.weight M.1 = F₂.weight M.2} where
-  L M s := F₁.L M.1.1 s * F₂.L M.1.2 s
-  valueField M := F₁.valueField M.1.1 ⊔ F₂.valueField M.1.2
-  weight M := F₁.weight M.1.1
-  gammaShifts M := F₁.gammaShifts M.1.1 + F₂.gammaShifts M.1.2
-  period M n := F₁.period M.1.1 n * F₂.period M.1.2 n
-  galoisAction :=
-    { toFun := fun σ ↦ ((F₁.galoisAction σ).prodCongr (F₂.galoisAction σ)).subtypeEquiv
-        fun M ↦ by simp [F₁.weight_galoisAction, F₂.weight_galoisAction]
-      map_one' := by ext M <;> simp
-      map_mul' := fun σ τ ↦ by ext M <;> simp }
-  weight_galoisAction σ M := F₁.weight_galoisAction σ M.1.1
-  gammaShifts_galoisAction σ M := by
-    simp [F₁.gammaShifts_galoisAction, F₂.gammaShifts_galoisAction]
-  valueField_galoisAction σ M := by
-    simp [F₁.valueField_galoisAction, F₂.valueField_galoisAction, IntermediateField.map_sup]
-  valueField_isAlgebraic M _ :=
-    IntermediateField.forall_isAlgebraic_iff_le.mpr (sup_le
-      (IntermediateField.forall_isAlgebraic_iff_le.mp fun _ ↦ F₁.valueField_isAlgebraic M.1.1)
-      (IntermediateField.forall_isAlgebraic_iff_le.mp fun _ ↦ F₂.valueField_isAlgebraic M.1.2)) _
-  period_ne_zero' M n h₁ h₂ := by
-    simp only [Multiset.mem_add, or_imp, forall_and] at h₁ h₂
-    exact mul_ne_zero (F₁.period_ne_zero' _ n h₁.1 h₂.1)
-      (F₂.period_ne_zero' _ n h₁.2 (M.2 ▸ h₂.2))
-
-variable {F₁ : Pkg Ω₁} {F₂ : Pkg Ω₂} {M₁ : Ω₁} {M₂ : Ω₂}
-
-@[simp]
-lemma weight_sum (M : {M : Ω₁ × Ω₂ // F₁.weight M.1 = F₂.weight M.2}) :
-    (F₁.sum F₂).weight M = F₁.weight M.1.1 := rfl
-
-@[simp]
-lemma L_sum (M : {M : Ω₁ × Ω₂ // F₁.weight M.1 = F₂.weight M.2}) (s : ℂ) :
-    (F₁.sum F₂).L M s = F₁.L M.1.1 s * F₂.L M.1.2 s := rfl
-
-@[simp]
-lemma normalizedValue_sum (M : {M : Ω₁ × Ω₂ // F₁.weight M.1 = F₂.weight M.2}) (n : ℤ) :
-    (F₁.sum F₂).normalizedValue M n
-      = F₁.normalizedValue M.1.1 n * F₂.normalizedValue M.1.2 n :=
-  (div_mul_div_comm _ _ _ _).symm
-
-@[simp]
-lemma valueField_sum (M : {M : Ω₁ × Ω₂ // F₁.weight M.1 = F₂.weight M.2}) :
-    (F₁.sum F₂).valueField M = F₁.valueField M.1.1 ⊔ F₂.valueField M.1.2 :=
-  rfl
-
-@[simp]
-lemma gammaFactor_sum (M : {M : Ω₁ × Ω₂ // F₁.weight M.1 = F₂.weight M.2}) (s : ℂ) :
-    (F₁.sum F₂).gammaFactor M s = F₁.gammaFactor M.1.1 s * F₂.gammaFactor M.1.2 s :=
-  Complex.prodGammaℝ_add _ _ s
-
-/-- Criticality for a direct sum is criticality for both summands. -/
-lemma isCritical_sum_iff (M : {M : Ω₁ × Ω₂ // F₁.weight M.1 = F₂.weight M.2}) (n : ℤ) :
-    (F₁.sum F₂).IsCritical M n ↔ F₁.IsCritical M.1.1 n ∧ F₂.IsCritical M.1.2 n := by
-  simp only [isCritical_iff, weight_sum, M.2, show (F₁.sum F₂).gammaShifts M
-    = F₁.gammaShifts M.1.1 + F₂.gammaShifts M.1.2 from rfl, Multiset.mem_add, or_imp, forall_and]
-  tauto
-
-@[simp]
-lemma coe_galoisAction_sum (σ : Gal(ℂ/ℚ)) (M : {M : Ω₁ × Ω₂ // F₁.weight M.1 = F₂.weight M.2}) :
-    ((F₁.sum F₂).galoisAction σ M).1 = (F₁.galoisAction σ M.1.1, F₂.galoisAction σ M.1.2) :=
-  rfl
-
-theorem IsArithmetic.sum (hw : F₁.weight M₁ = F₂.weight M₂) (h₁ : F₁.IsArithmetic M₁)
-    (h₂ : F₂.IsArithmetic M₂) : (F₁.sum F₂).IsArithmetic ⟨(M₁, M₂), hw⟩ := fun n hn ↦ by
-  obtain ⟨hn₁, hn₂⟩ := (isCritical_sum_iff ⟨(M₁, M₂), hw⟩ n).mp hn
-  rw [normalizedValue_sum, valueField_sum]
-  exact mul_mem (le_sup_left (a := F₁.valueField M₁) (h₁ n hn₁))
-    (le_sup_right (b := F₂.valueField M₂) (h₂ n hn₂))
-
-theorem IsEquivariant.sum (hw : F₁.weight M₁ = F₂.weight M₂) (h₁ : F₁.IsEquivariant M₁)
-    (h₂ : F₂.IsEquivariant M₂) : (F₁.sum F₂).IsEquivariant ⟨(M₁, M₂), hw⟩ := fun σ n hn ↦ by
-  obtain ⟨hn₁, hn₂⟩ := (isCritical_sum_iff ⟨(M₁, M₂), hw⟩ n).mp hn
-  rw [normalizedValue_sum, map_mul, h₁ σ n hn₁, h₂ σ n hn₂, normalizedValue_sum,
-    coe_galoisAction_sum]
-
--- `Conjecture` is an `abbrev` for a conjunction, so its head unfolds to `And`: dot notation
--- `h.sum` does not resolve to this lemma. The two halves below are reached through
--- `IsArithmetic` and `IsEquivariant`, which are plain `def`s and do resolve.
-theorem Conjecture.sum (hw : F₁.weight M₁ = F₂.weight M₂) (h₁ : F₁.Conjecture M₁)
-    (h₂ : F₂.Conjecture M₂) : (F₁.sum F₂).Conjecture ⟨(M₁, M₂), hw⟩ :=
-  ⟨IsArithmetic.sum hw h₁.1 h₂.1, IsEquivariant.sum hw h₁.2 h₂.2⟩
-
-/-! ### Galois descent -/
-
-/-- An automorphism of `ℂ` fixes the product of the normalised values of a family of objects it
-permutes. -/
-theorem map_prod_normalizedValue {ι : Type*} [Fintype ι] (M : ι → Ω) {n : ℤ}
-    (hcrit : ∀ i, F.IsCritical (M i) n) (heq : ∀ i, F.IsEquivariant (M i)) (σ : Gal(ℂ/ℚ))
-    (hσ : ∃ e : Equiv.Perm ι, ∀ i, F.galoisAction σ (M i) = M (e i)) :
-    σ (∏ i, F.normalizedValue (M i) n) = ∏ i, F.normalizedValue (M i) n := by
-  obtain ⟨e, he⟩ := hσ
-  rw [map_prod]
-  calc ∏ i, σ (F.normalizedValue (M i) n)
-      = ∏ i, F.normalizedValue (M (e i)) n :=
-        Finset.prod_congr rfl fun i _ ↦ by rw [heq i σ n (hcrit i), he i]
-    _ = ∏ i, F.normalizedValue (M i) n :=
-        Equiv.prod_comp e fun j ↦ F.normalizedValue (M j) n
-
-/-- The product of the normalised values of a family of objects lies in the compositum of their
-value fields. -/
-theorem prod_normalizedValue_mem_iSup {ι : Type*} [Fintype ι] (M : ι → Ω) {n : ℤ}
-    (hcrit : ∀ i, F.IsCritical (M i) n) (harith : ∀ i, F.IsArithmetic (M i)) :
-    ∏ i, F.normalizedValue (M i) n ∈ ⨆ i, F.valueField (M i) :=
-  prod_mem fun i _ ↦ le_iSup (fun i ↦ F.valueField (M i)) i (harith i n (hcrit i))
 
 end Pkg
 
