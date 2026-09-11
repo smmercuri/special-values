@@ -29,7 +29,7 @@ an instance: the framework's computed critical set is the explicit one of
   `DirichletCharacter.gammaFactor`, so the critical set is computed against an external object.
 * `Deligne.GL1.isCritical_pkg_iff`: the framework's criticality predicate is
   `Deligne.GL1.IsCritical`.
-* `Deligne.GL1.hasCriticalInteger_pkg`: every object has a critical integer.
+* `Deligne.GL1.exists_isCritical_pkg`: every object has a critical integer.
 -/
 
 open Complex DirichletCharacter ZMod
@@ -60,11 +60,6 @@ noncomputable def pkg (N : ℕ) [NeZero N] :
 lemma coe_galoisAction_pkg [NeZero N] (σ : Gal(ℂ/ℚ))
     (M : {χ : DirichletCharacter ℂ N // χ.IsPrimitive}) :
     ((pkg N).galoisAction σ M).1 = galoisConj M.1 σ :=
-  rfl
-
-@[simp]
-lemma L_pkg [NeZero N] (M : {χ : DirichletCharacter ℂ N // χ.IsPrimitive}) :
-    (pkg N).L M = DirichletCharacter.LFunction M.1 :=
   rfl
 
 /-- The value field of the GL(1) package is `ℚ(χ)`. -/
@@ -103,12 +98,11 @@ theorem isCritical_pkg_iff [NeZero N]
       forall_eq, Int.odd_iff, Int.even_iff]
     omega
 
-/-- Every primitive character has a critical integer, which is the nondegeneracy obligation
-`SpecialValues/Deligne/Pkg.lean` imposes on an instance. -/
-theorem hasCriticalInteger_pkg [NeZero N]
-    (M : {χ : DirichletCharacter ℂ N // χ.IsPrimitive}) :
-    (pkg N).HasCriticalInteger M :=
-  let ⟨n, hn⟩ := Deligne.GL1.exists_isCritical M.1
+/-- Every primitive character has a critical integer, so the conjecture is not vacuous at any
+object of the package. -/
+theorem exists_isCritical_pkg [NeZero N] (M : {χ : DirichletCharacter ℂ N // χ.IsPrimitive}) :
+    ∃ n : ℤ, (pkg N).IsCritical M n :=
+  let ⟨n, hn⟩ := exists_isCritical M.1
   ⟨n, (isCritical_pkg_iff M n).mpr hn⟩
 
 end Deligne.GL1

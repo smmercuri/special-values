@@ -165,7 +165,7 @@ without it the package still exists but says nothing at any object.
 
 \begin{lemma}[Nondegeneracy: a critical integer exists]
   \label{lem:gl1-nondegenerate}
-  \lean{Deligne.GL1.exists\_isCritical, Deligne.GL1.hasCriticalInteger\_pkg}
+  \lean{Deligne.GL1.exists\_isCritical, Deligne.GL1.exists\_isCritical\_pkg}
   \leanok
   \uses{def:gl1-critical, def:hasCriticalInteger}
   Every $\chi$ has a critical integer; equivalently, every object of
@@ -453,42 +453,6 @@ This is the half where the period is a genuine transcendental, and so the half t
 actually exercises the framework. It is a corollary of \S\ref{sec:gl1-negative} and
 mathlib's functional equation, not an independent argument.
 
-\begin{lemma}[When two characters share a critical integer]
-  \label{lem:gl1-common-critical}
-  \lean{Deligne.GL1.exists\_isCritical\_and\_isCritical\_iff}
-  \leanok
-  \uses{def:gl1-critical}
-  Two Dirichlet characters $\chi_1, \chi_2$ (of any moduli) have a common critical integer if
-  and only if they have the same parity.
-\end{lemma}
-\begin{proof}
-  \leanok
-  By Definition~\ref{def:gl1-critical} the critical set of an even character is
-  $\{n \geq 2 \text{ even}\} \cup \{n \leq -1 \text{ odd}\}$ and that of an odd character is
-  $\{n \geq 1 \text{ odd}\} \cup \{n \leq 0 \text{ even}\}$. Same parity: take $n = 2$ if both
-  are even and $n = 1$ if both are odd. Opposite parity: the two sets are disjoint, since on
-  $n \geq 1$ they demand opposite parities of $n$ and on $n \leq 0$ they likewise do.
-
-  This is why Definition~\ref{def:hasCriticalInteger} is not inherited by direct sums
-  (Remark~\ref{rem:not-a-pkg}), and why $\zeta_K$ for $K$ imaginary quadratic has no critical
-  integers.
-\end{proof}
-
-\begin{lemma}[Criticality transfers across the functional equation]
-  \label{lem:crit-one-sub}
-  \lean{Deligne.GL1.isCritical\_one\_sub\_iff}
-  \leanok
-  \uses{def:gl1-critical, lem:even-inv}
-  Let $n \geq 1$. Then $n$ is critical for $\chi$ if and only if $1-n \leq 0$ is
-  critical for $\chi^{-1}$.
-\end{lemma}
-\begin{proof}
-  \leanok
-  $\chi^{-1}$ has the same parity as $\chi$ (Lemma~\ref{lem:even-inv}). Writing $n = 2r + \delta$ with $r \geq 0$, we get
-  $1 - n = 1 - 2r - \delta$, so $1-n \equiv 1 - \delta \not\equiv \delta \pmod 2$,
-  which is exactly the non-positive branch of Definition~\ref{def:gl1-critical}.
-\end{proof}
-
 \begin{lemma}[Value field is inversion-invariant]
   \label{lem:valueField-inv}
   \lean{Deligne.GL1.valueField\_inv}
@@ -682,9 +646,8 @@ mathlib's functional equation, not an independent argument.
   One step of the expected argument is absent, and its absence is worth recording.
   Theorem~\ref{thm:gl1-nonpos} is proved for \emph{every} non-positive integer, not only the
   critical ones --- the generalised Bernoulli number $B_{k+1,\chi}$ lies in $\Q(\chi)$
-  whatever the parity of $k$. So the criticality of $1-n$ for $\chi^{-1}$ is never needed, and
-  Lemma~\ref{lem:crit-one-sub} is not invoked here. It is kept as a statement about the
-  critical set in its own right, not as a step of this proof.
+  whatever the parity of $k$. So the criticality of $1-n$ for $\chi^{-1}$ --- which does hold,
+  the functional equation exchanging the two halves of the critical set --- is never needed.
 \end{proof}
 
 \begin{theorem}[Positive half: equivariance]

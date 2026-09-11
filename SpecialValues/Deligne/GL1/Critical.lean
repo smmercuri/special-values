@@ -23,10 +23,6 @@ on an instance.
 * `Deligne.GL1.isCritical_galoisConj_iff`: criticality is invariant under Galois conjugation.
 * `Deligne.GL1.exists_isCritical`: every character has a critical integer.
 * `Deligne.GL1.isCritical_one_iff`: the critical set of the trivial character is that of `ζ`.
-* `Deligne.GL1.exists_isCritical_and_isCritical_iff`: two characters share a critical integer
-  exactly when they have the same parity.
-* `Deligne.GL1.isCritical_one_sub_iff`: the functional equation exchanges the two halves of the
-  critical set.
 -/
 
 open Complex DirichletCharacter ZMod
@@ -55,45 +51,5 @@ lemma isCritical_one_iff (n : ℤ) :
     IsCritical (1 : DirichletCharacter ℂ N) n ↔ (2 ≤ n ∧ 2 ∣ n) ∨ (n ≤ -1 ∧ ¬2 ∣ n) := by
   simp only [IsCritical, DirichletCharacter.even_one, iff_true, Int.even_iff]
   omega
-
-/-- Two Dirichlet characters have a common critical integer exactly when they have the same
-parity. -/
-lemma exists_isCritical_and_isCritical_iff {N₁ N₂ : ℕ} {χ₁ : DirichletCharacter ℂ N₁}
-    {χ₂ : DirichletCharacter ℂ N₂} :
-    (∃ n : ℤ, IsCritical χ₁ n ∧ IsCritical χ₂ n) ↔ (χ₁.Even ↔ χ₂.Even) := by
-  constructor
-  · rintro ⟨n, h₁, h₂⟩
-    rcases χ₁.even_or_odd with he₁ | ho₁ <;> rcases χ₂.even_or_odd with he₂ | ho₂
-    · exact iff_of_true he₁ he₂
-    · simp only [IsCritical, iff_true_intro he₁, iff_false_intro ho₂.not_even, iff_true,
-        iff_false, Int.even_iff] at h₁ h₂
-      omega
-    · simp only [IsCritical, iff_false_intro ho₁.not_even, iff_true_intro he₂, iff_true,
-        iff_false, Int.even_iff] at h₁ h₂
-      omega
-    · exact iff_of_false ho₁.not_even ho₂.not_even
-  · intro h
-    rcases χ₁.even_or_odd with he₁ | ho₁
-    · exact ⟨2, Or.inl ⟨by norm_num, iff_of_true even_two he₁⟩,
-        Or.inl ⟨by norm_num, iff_of_true even_two (h.mp he₁)⟩⟩
-    · have hne₁ : ¬χ₁.Even := ho₁.not_even
-      have hne₂ : ¬χ₂.Even := fun hh ↦ hne₁ (h.mpr hh)
-      exact ⟨1, Or.inl ⟨le_rfl, iff_of_false (by norm_num) hne₁⟩,
-        Or.inl ⟨le_rfl, iff_of_false (by norm_num) hne₂⟩⟩
-
-/-- The functional equation `s ↦ 1 - s` exchanges the two halves of the critical set. -/
-lemma isCritical_one_sub_iff {χ : DirichletCharacter ℂ N} {n : ℤ} (hn : 1 ≤ n) :
-    IsCritical χ n ↔ IsCritical χ⁻¹ (1 - n) := by
-  have hE : _root_.Even (1 - n) ↔ ¬_root_.Even n := by
-    simp only [Int.even_iff]
-    omega
-  simp only [IsCritical, DirichletCharacter.even_inv_iff, hE]
-  constructor
-  · rintro (⟨-, h⟩ | ⟨h, -⟩)
-    · exact Or.inr ⟨by omega, by tauto⟩
-    · exact absurd hn (by omega)
-  · rintro (⟨h, -⟩ | ⟨-, h⟩)
-    · exact absurd hn (by omega)
-    · exact Or.inl ⟨hn, by tauto⟩
 
 end Deligne.GL1

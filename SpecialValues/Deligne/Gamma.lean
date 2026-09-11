@@ -201,11 +201,6 @@ lemma prodGammaℝ_cons (a : ℤ) (shifts : Multiset ℤ) :
     prodGammaℝ (a ::ₘ shifts) = (fun z ↦ Gammaℝ (z + a)) * prodGammaℝ shifts := by
   funext; simp [prodGammaℝ]
 
-@[simp]
-lemma prodGammaℝ_add (shifts₁ shifts₂ : Multiset ℤ) (s : ℂ) :
-    prodGammaℝ (shifts₁ + shifts₂) s = prodGammaℝ shifts₁ s * prodGammaℝ shifts₂ s := by
-  simp [prodGammaℝ, Multiset.prod_add]
-
 /-- For elements of `WithTop ℤ` that are at most `0`, a sum is non-negative exactly when both
 summands are. -/
 private lemma add_nonneg_iff_of_nonpos {x y : WithTop ℤ} (hx : x ≤ 0) (hy : y ≤ 0) :

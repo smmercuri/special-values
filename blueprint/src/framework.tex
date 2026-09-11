@@ -212,8 +212,8 @@ requirements.
   Nondegeneracy is therefore now Definition~\ref{def:hasCriticalInteger}, a predicate discharged
   per instance. It was direct sums of packages that forced the issue: two motives may each have
   critical integers and yet share none --- for GL(1), exactly when their characters have opposite
-  parity (Lemma~\ref{lem:gl1-common-critical}) --- so the requirement is not preserved by
-  $\oplus$.
+  parity, since by Definition~\ref{def:gl1-critical} the critical sets of an even and an odd
+  character are disjoint --- so the requirement is not preserved by $\oplus$.
 \end{remark}
 
 \begin{remark}[Why the value field is bounded]
@@ -230,7 +230,7 @@ requirements.
   Requirement (x) is the bound: $E(M)$ consists of algebraic numbers, so the largest field an
   instance may name is $\Qbar$ and not $\C$. There Definition~\ref{def:algebraicity} reads
   ``the normalised critical values are algebraic''. That is a weak statement, but it is a
-  statement, which is Theorem~\ref{thm:arithmetic-algebraic}.
+  statement.
 
   It is weaker than the truth. Deligne's $E(M)$ is a \emph{number field}, finite over $\Q$, and
   requiring finiteness would be the sharp form of the bound. It is not imposed because
@@ -243,20 +243,6 @@ requirements.
   one; and it excludes no legitimate object, since every motive has a number field for its
   coefficients.
 \end{remark}
-
-\begin{theorem}[Algebraicity always asserts algebraicity]
-  \label{thm:arithmetic-algebraic}
-  \lean{Deligne.Pkg.IsArithmetic.isAlgebraic}
-  \leanok
-  \uses{def:algebraicity, def:pkg}
-  If $F$ satisfies algebraicity at $M$ then $\widetilde{L}_{F}(M,n)$ is algebraic over $\Q$ at
-  every critical $n$, whatever $E$ the package supplies.
-\end{theorem}
-\begin{proof}
-  \leanok
-  $\widetilde{L}_{F}(M,n) \in E(M)$, and $E(M)$ is algebraic by requirement (x) of
-  Definition~\ref{def:pkg}.
-\end{proof}
 
 Two remarks on the shape of this definition, both of which are forced by how the
 instances actually want to use it.
@@ -324,28 +310,6 @@ satisfy equivariance.
   equivariance at $M$.
 \end{definition}
 
-\begin{lemma}[Rational values are automatically equivariant]
-  \label{lem:rational-equivariant}
-  \lean{Deligne.Pkg.IsArithmetic.isEquivariant\_of\_valueField\_eq\_bot,
-    IntermediateField.apply\_eq\_self\_of\_mem\_bot}
-  \leanok
-  \uses{def:algebraicity, def:equivariance}
-  Let $M$ be an object with $E(M) = \Q$ and $M^{\sigma} = M$ for every
-  $\sigma \in \operatorname{Gal}(\C/\Q)$. Then algebraicity at $M$ implies equivariance at $M$.
-\end{lemma}
-\begin{proof}
-  \leanok
-  A $\Q$-algebra endomorphism of $\C$ fixes the bottom intermediate field $\Q$ pointwise, so
-  $\sigma$ fixes $\widetilde{L}_{F}(M,n)$, which lies in $\Q$ by algebraicity; and
-  $M^{\sigma}=M$ makes the right-hand side of equivariance the same number.
-\end{proof}
-
-This is not a weakening of Section~\ref{sec:assertions}'s claim that equivariance is strictly
-more information than algebraicity. It says only that the gap between them closes when the
-value field is $\Q$ \emph{and} the object is Galois-fixed, which is exactly the situation
-of a motive over $\Q$ with rational coefficients; for an object with a larger $E(M)$, or one the
-action moves, equivariance still carries the extra content.
-
 \section{The period and the \texorpdfstring{$L$}{L}-function}
 \label{sec:no-L-field}
 
@@ -406,16 +370,15 @@ Deligne's conjecture; they are what makes an instantiation of it trustworthy.
 
 \begin{definition}[Nondegeneracy]
   \label{def:hasCriticalInteger}
-  \lean{Deligne.Pkg.HasCriticalInteger}
-  \leanok
-  \uses{def:pkg}
-  An object $M$ is \emph{nondegenerate} if it has at least one critical integer.
+  \uses{def:isCritical}
+  An object $M$ is \emph{nondegenerate} if it has at least one critical integer. This is a
+  predicate on the mathematics and is not given a Lean name: an instance states it directly,
+  as $\exists n,\ \mathrm{IsCritical}(M,n)$.
 \end{definition}
 
 \begin{theorem}[The degenerate case is vacuously true]
   \label{thm:vacuous-conjecture}
-  \lean{Deligne.Pkg.Conjecture.of\_not\_hasCriticalInteger,
-    Deligne.Pkg.conjecture\_of\_forall\_not\_isCritical}
+  \lean{Deligne.Pkg.conjecture\_of\_forall\_not\_isCritical}
   \leanok
   \uses{def:hasCriticalInteger, def:conjecture}
   If $M$ has no critical integer then $F$ satisfies Deligne's conjecture at $M$.

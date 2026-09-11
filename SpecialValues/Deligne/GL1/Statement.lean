@@ -35,7 +35,7 @@ of the critical set.
   nonzero. `SpecialValues/Deligne/Pkg.lean` rules out the two degenerate *shapes* — no critical
   integers, and a vanishing period — but neither guard prevents an instance whose normalised
   values all happen to be `0`, which would satisfy the conjecture while asserting nothing. Together
-  with `Deligne.GL1.hasCriticalInteger_pkg` this closes that for GL(1), uniformly in the conductor.
+  with `Deligne.GL1.exists_isCritical_pkg` this closes that for GL(1), uniformly in the conductor.
 * `Deligne.GL1.normalizedValue_modOne_two`, `Deligne.GL1.normalizedValue_modOne_four`: numerical
   checks of the period normalisation against `ζ(2)` and `ζ(4)`.
 -/
@@ -162,7 +162,7 @@ theorem isEquivariant_pkg [NeZero N] (M : {χ : DirichletCharacter ℂ N // χ.I
 and every critical integer `n`, the normalised value `L(χ, n) / c(n, χ)` lies in `ℚ(χ)`, where
 `c(n, χ) = 1` if `n ≤ 0` and `c(n, χ) = G(χ)(2πi)ⁿ` if `1 ≤ n`, and every automorphism of `ℂ`
 carries it to the corresponding value of `χ ^ σ`. That there is a critical integer to speak of is
-`Deligne.GL1.hasCriticalInteger_pkg`, a separate theorem. -/
+`Deligne.GL1.exists_isCritical_pkg`, a separate theorem. -/
 theorem conjecture [NeZero N] {χ : DirichletCharacter ℂ N} (h : χ.IsPrimitive) :
     (pkg N).Conjecture ⟨χ, h⟩ :=
   ⟨isArithmetic_pkg ⟨χ, h⟩, isEquivariant_pkg ⟨χ, h⟩⟩
