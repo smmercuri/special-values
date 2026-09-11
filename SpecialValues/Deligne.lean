@@ -7,4 +7,3 @@ import SpecialValues.Deligne.DirichletCharacter
 import SpecialValues.Deligne.Gamma
 import SpecialValues.Deligne.GL1
 import SpecialValues.Deligne.Pkg
-import SpecialValues.Deligne.SymPow

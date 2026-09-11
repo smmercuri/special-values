@@ -384,10 +384,7 @@ package should be the complete data of the conjecture and because nothing formal
 author from writing $F$ and $L$ in the same file with the same number in mind in either shape.
 What remains is a reading obligation: a reader of an instance checks that its period does not
 mention its $L$-function. For GL(1) the period is a Gauss sum times a power of $2\pi i$
-(Definition~\ref{def:gl1-period}) and the $L$-function is mathlib's; for
-Chapter~\ref{chap:sympow} the period is a function of a period lattice and of nothing else
-(Definition~\ref{def:periodpair-periods}), and the $L$-function is quantified over outside the
-package (Definition~\ref{def:sympow-conjecture}).
+(Definition~\ref{def:gl1-period}) and the $L$-function is mathlib's.
 
 \section{Guarding against vacuous instances}
 \label{sec:guards}
@@ -458,6 +455,96 @@ two requirements, is exactly what it used to prove afterwards.
   $\zeta$ in Remark~\ref{rem:zeta-sanity}. An instance that proves
   \lean{Conjecture} but omits its characterisation theorem has
   not been shown to be about anything.
+\end{remark}
+
+\section{Rescaling by a rational}
+\label{sec:rescale}
+
+Deligne's period is only ever defined up to $E(M)^{\times}$ --- it is a determinant of a
+comparison isomorphism computed in rational bases, and changing the bases rescales it --- and
+the incomplete $L$-function differs from the complete one by a rational at a critical integer.
+The conjecture is stated as a membership precisely so as to be invariant under both. The
+following lemmas make this rigorous, and they are what licenses every ``up to $\Q^{\times}$''
+in an instance.
+
+\begin{lemma}[Subfields see no rational scaling]
+  \label{lem:rat-smul-mem}
+  \lean{SubfieldClass.qsmul\_mem\_iff}
+  Let $K$ be a subfield of $\C$, $q \in \Q^{\times}$ and $v \in \C$. Then
+  $qv \in K \iff v \in K$.
+\end{lemma}
+\begin{proof}
+  Every subfield of $\C$ contains the prime subfield, so $q \in K$ and $q^{-1} \in K$; multiply.
+\end{proof}
+
+\begin{lemma}[Automorphisms see no rational scaling]
+  \label{lem:rat-smul-map}
+  \lean{map\_rat\_smul}
+  For $\sigma \in \operatorname{Gal}(\C/\Q)$, $q \in \Q$ and $v \in \C$:
+  $\sigma(qv) = q\,\sigma(v)$.
+\end{lemma}
+\begin{proof}
+  $\sigma$ is a ring homomorphism, so it fixes the image of $\Q$ (\lean{map\_ratCast}), and is
+  multiplicative. This is mathlib's \lean{map\_rat\_smul}, stated there for any additive
+  homomorphism between $\Q$-modules; nothing is to be introduced for it.
+\end{proof}
+
+\begin{theorem}[The conjecture is insensitive to rational rescaling of $L$ and $c^{+}$]
+  \label{thm:conjecture-rescale}
+  \lean{Deligne.Pkg.isCritical\_congr, Deligne.Pkg.normalizedValue\_of\_rat\_smul,
+    Deligne.Pkg.isArithmetic\_congr\_of\_rat\_smul,
+    Deligne.Pkg.isEquivariant\_congr\_of\_rat\_smul,
+    Deligne.Pkg.conjecture\_congr\_of\_rat\_smul}
+  \leanok
+  \uses{lem:rat-smul-mem, lem:rat-smul-map, def:algebraicity, def:equivariance,
+    def:normalizedValue}
+  Let $F$ and $F'$ be Deligne packages on the same $\Omega$ agreeing in weight, shifts,
+  value field and Galois action. Fix $M \in \Omega$ and suppose there are
+  $q, q' \colon \Omega \to \Z \to \Q^{\times}$ with
+  \[ F'.L(N,n) = q(N,n)\,F.L(N,n), \qquad F'.c^{+}(N(n)) = q'(N,n)\,F.c^{+}(N(n)) \]
+  for every $N \in \Omega$ and every $n$ \emph{critical for $M$}. Write
+  $r(N,n) = q(N,n)/q'(N,n)$, and assume in addition that $r$ is constant on the Galois orbit of
+  $M$:
+  \[ r(M^{\sigma},n) = r(M,n) \qquad \text{for every } \sigma \in \operatorname{Gal}(\C/\Q)
+     \text{ and every } n \text{ critical for } M. \]
+  Then $F'$ satisfies algebraicity at $M$ iff $F$ does, and likewise for equivariance; hence
+  $F'.\mathrm{Conjecture}(M) \iff F.\mathrm{Conjecture}(M)$.
+\end{theorem}
+\begin{proof}
+  \leanok
+  The two packages have the same shifts and weight, so the same critical integers. At a
+  critical $n$ the normalised values differ by the factor $r(N,n) \in \Q^{\times}$, since
+  $(qL)/(q'c^{+}) = (q/q')\,(L/c^{+})$ identically. Apply Lemma~\ref{lem:rat-smul-mem} for
+  algebraicity. For equivariance, Lemma~\ref{lem:rat-smul-map} pulls $r(M,n)$ through
+  $\sigma$, so the left-hand side acquires the factor $r(M,n)$ and the right-hand side the
+  factor $r(M^{\sigma},n)$; these agree by hypothesis, and cancelling the common nonzero
+  rational gives the equivalence. Both assertions quantify only over $n$ critical for $M$, and
+  the hypotheses are assumed exactly there, which is what
+  Remark~\ref{rem:rescale-critical-only} says is the right strength.
+\end{proof}
+
+\begin{remark}[Why the hypotheses are restricted to the critical set]
+  \label{rem:rescale-critical-only}
+  \uses{thm:conjecture-rescale}
+  An earlier form of Theorem~\ref{thm:conjecture-rescale} asked for the two displayed
+  identities at \emph{every} integer $n$. That is strictly stronger than its proof uses, and
+  the difference is not cosmetic.
+
+  Definition~\ref{def:algebraicity} and Definition~\ref{def:equivariance} quantify only over
+  the critical integers, so the values of $L$ and of $c^{+}$ away from the critical set are
+  invisible to both sides of the equivalence. Requiring the identities there constrains data
+  that the conclusion never reads. It also constrains the one part of a Deligne package that
+  carries no information: $c^{+}$ is a field of the structure, so off the critical set a
+  package is free to carry whatever value it likes. Two packages asserting the same conjecture
+  may therefore disagree arbitrarily off the critical set --- including in whether $c^{+}$
+  vanishes there, which no $q'(M,n) \in \Q^{\times}$ can repair --- and under the
+  unrestricted hypothesis the theorem could not compare such a pair at all.
+
+  Equivariance is the one assertion that compares $M$ with $M^{\sigma}$, so a rescaling which
+  varies over the Galois orbit is not invisible to it: rescaling $L(M^{\sigma},\cdot)$ by $2$
+  and leaving $L(M,\cdot)$ alone turns the true equation $\sigma(v) = v^{\sigma}$ into the
+  false $\sigma(v) = 2v^{\sigma}$. That is why the Galois-invariance hypothesis is there, and
+  why the two halves are separate lemmas with different hypotheses rather than one.
 \end{remark}
 
 \section{Direct sums}

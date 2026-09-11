@@ -302,7 +302,7 @@ of `π` changes the truth value.
 The three lemmas ask for their rescaling identities at the *critical* integers only, and that
 is deliberate: `Deligne.Pkg.IsArithmetic` and `Deligne.Pkg.IsEquivariant` quantify over the
 critical set alone, so the restricted hypothesis is the weakest one that suffices, and a package
-is left free to carry whatever period it likes off that set. See `blueprint/src/sympow.tex`
+is left free to carry whatever period it likes off that set. See `blueprint/src/framework.tex`
 §`rem:rescale-critical-only`.
 -/
 
