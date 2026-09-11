@@ -1,0 +1,938 @@
+\chapter{GL(1): Dirichlet $L$-functions}
+\label{chap:gl1}
+
+The GL(1) case of Deligne's conjecture is the classical arithmeticity of critical
+values of Dirichlet $L$-functions: the Artin motive of a primitive Dirichlet character
+$\chi$ modulo $N$. This chapter gives a complete proof.
+
+Throughout, $N \geq 1$, $\chi$ is a primitive Dirichlet character modulo $N$ with
+values in $\C$, and $\delta \in \{0,1\}$ is defined by $\chi(-1) = (-1)^{\delta}$.
+Mathlib records the dichotomy as \lean{DirichletCharacter.Even} ($\delta = 0$) and
+\lean{DirichletCharacter.Odd} ($\delta = 1$), exhaustive by
+\lean{DirichletCharacter.even_or_odd}.
+
+\section{The data}
+
+\begin{definition}[Field of values]
+  \label{def:valueField}
+  \lean{Deligne.GL1.valueField}
+  \leanok
+  $\Q(\chi) \subseteq \C$ is the intermediate field $\Q$ adjoin the values of $\chi$. In Lean,
+  \lean{IntermediateField.adjoin ℚ (Set.range fun a => χ a)}.
+\end{definition}
+
+\begin{lemma}[The field of values is algebraic]
+  \label{lem:valueField-algebraic}
+  \lean{Deligne.GL1.isAlgebraic\_of\_mem\_valueField}
+  \leanok
+  \uses{def:valueField, lem:values-algebraic}
+  Every element of $\Q(\chi)$ is algebraic over $\Q$, which is requirement (ix) of
+  Definition~\ref{def:pkg}.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Every value $\chi(a)$ is an algebraic number (Lemma~\ref{lem:values-algebraic}), and a field
+  generated over $\Q$ by algebraic elements is algebraic
+  (\lean{IntermediateField.isAlgebraic\_adjoin\_iff\_isAlgebraic}).
+\end{proof}
+
+\begin{definition}[Galois conjugate]
+  \label{def:galoisConj}
+  \lean{Deligne.GL1.galoisConj}
+  \leanok
+  For $\sigma \in \operatorname{Gal}(\C/\Q)$, set $\chi^{\sigma} = \sigma \circ \chi$,
+  which is again a Dirichlet character modulo $N$ (\lean{MulChar.ringHomComp}).
+\end{definition}
+
+\begin{definition}[Critical integers]
+  \label{def:gl1-critical}
+  \lean{Deligne.GL1.IsCritical}
+  \leanok
+  An integer $n$ is \emph{critical} for $\chi$ if either
+  \begin{itemize}
+    \item $n \geq 1$ and $n \equiv \delta \pmod 2$, or
+    \item $n \leq 0$ and $n \not\equiv \delta \pmod 2$.
+  \end{itemize}
+\end{definition}
+
+\begin{definition}[Period]
+  \label{def:gl1-period}
+  \lean{Deligne.GL1.period}
+  \leanok
+  \[
+    c^{+}(M(\chi)(n)) \;=\;
+    \begin{cases}
+      \tau(\chi)\,(2\pi i)^{n}, & n \geq 1,\\
+      1, & n \leq 0,
+    \end{cases}
+  \]
+  where $\tau(\chi) = \operatorname{gaussSum} \chi\ \lean{ZMod.stdAddChar}$.
+\end{definition}
+
+The branch is not an artefact of bookkeeping: it is exactly where $c^{+}$ and $c^{-}$
+exchange roles as $n$ crosses the centre of the critical strip, and it is the
+structure that becomes the $\omega^{\pm}$ bookkeeping for GL(2).
+
+\begin{remark}[Sanity check against $\zeta$]
+  \label{rem:zeta-sanity}
+  \uses{def:gl1-critical, def:gl1-period}
+  For $\chi = \mathbf{1}$ (so $\delta = 0$ and $L(\mathbf{1},s) = \zeta(s)$),
+  Definition~\ref{def:gl1-critical} gives critical integers $2,4,6,\dots$ and
+  $-1,-3,-5,\dots$. This is correct: $\zeta(2k)$ is a rational multiple of
+  $\pi^{2k}$ and $\zeta(1-2k) = -B_{2k}/2k$ is rational, while $\zeta(3)$ and the
+  trivial zeros $\zeta(-2k)$ are correctly excluded.
+
+  The period normalisation is pinned down by three numerical checks, each of which
+  the final theorem must reproduce:
+  \begin{itemize}
+    \item $\chi$ the odd character mod $4$, $n=1$: $L(\chi,1) = \pi/4$, $\tau(\chi) = 2i$,
+      so $c^{+} = 2i \cdot 2\pi i = -4\pi$ and the ratio is $-1/16 \in \Q$;
+    \item $\chi = \mathbf{1}$, $n=2$: $\zeta(2) = \pi^2/6$, $c^{+} = (2\pi i)^2 = -4\pi^2$,
+      ratio $-1/24 \in \Q$;
+    \item $\chi = \mathbf{1}$, $n=4$: $\zeta(4) = \pi^4/90$, $c^{+} = 16\pi^4$,
+      ratio $1/1440 \in \Q$.
+  \end{itemize}
+  Note $\tau(\chi) \notin \Q(\chi)$ in general --- it lives in $\Q(\chi,\zeta_N)$ ---
+  so the period carries genuine transcendental content and is not a normalisation
+  that could be absorbed into the field of values.
+\end{remark}
+
+\begin{lemma}[Critical set of the Riemann zeta function]
+  \label{lem:gl1-crit-spec}
+  \lean{Deligne.GL1.isCritical_one_iff}
+  \leanok
+  \uses{def:gl1-critical}
+  This is the obligation of Remark~\ref{rem:crit-spec}, and it must be a check against
+  something \emph{independently} specified --- an unfolding of
+  Definition~\ref{def:gl1-critical} against itself would be a tautology and would
+  certify nothing. We therefore specialise to $\chi = \mathbf{1}$, where the answer is
+  known in advance, and assert
+  \[ \mathrm{IsCritical}(\mathbf{1}, n) \iff (2 \leq n \wedge 2 \mid n) \vee (n \leq -1 \wedge 2 \nmid n). \]
+  The right-hand side mentions neither $\mathrm{IsCritical}$ nor
+  \lean{Deligne.Pkg}, and is the critical set of $\zeta$ as classically recorded.
+\end{lemma}
+\begin{proof}
+  \leanok
+  The trivial character is even, so $\delta = 0$ and the two branches of
+  Definition~\ref{def:gl1-critical} read $n \geq 1 \wedge 2 \mid n$ and
+  $n \leq 0 \wedge 2 \nmid n$. Since no odd $n$ is $0$ and no even $n \geq 1$ is $1$,
+  these are the two displayed conditions.
+\end{proof}
+
+\begin{lemma}[Numerical normalisation checks]
+  \label{lem:gl1-numeric}
+  \lean{Deligne.GL1.normalizedValue_modOne_two, Deligne.GL1.normalizedValue_modOne_four}
+  \uses{def:gl1-period, def:normalizedValue, lem:gaussSum-modOne}
+  The second half of the obligation of Remark~\ref{rem:crit-spec}: the period of
+  Definition~\ref{def:gl1-period} is checked against known values, so that a period
+  wrong by a nonzero constant is detected. Assert, as Lean statements,
+  \[ \widetilde{L}(\mathbf{1},2) = -\tfrac{1}{24}, \qquad
+     \widetilde{L}(\mathbf{1},4) = \tfrac{1}{1440}, \qquad
+     \widetilde{L}(\chi_{-4},1) = -\tfrac{1}{16}, \]
+  where $\chi_{-4}$ is the odd character modulo $4$.
+\end{lemma}
+\begin{proof}
+  The first two follow from \lean{riemannZeta\_two} and \lean{riemannZeta\_four}
+  together with $\tau(\mathbf{1}) = 1$ (Lemma~\ref{lem:gaussSum-modOne}), which
+  collapses the period to $c^{+} = (2\pi i)^{n}$. The third needs
+  $L(\chi_{-4},1) = \pi/4$ and $\tau(\chi_{-4}) = 2i$; the Gauss sum is a two-term
+  finite computation, and the $L$-value is the Leibniz series, so this one may need a
+  separate sub-blueprint if mathlib does not supply it directly. Recorded here as a
+  statement; see Remark~\ref{rem:numeric-status}.
+\end{proof}
+
+\begin{remark}[Status of the numerical checks]
+  \label{rem:numeric-status}
+  The two $\zeta$ checks are formalized, as
+  \lean{Deligne.GL1.normalizedValue\_modOne\_two} and
+  \lean{Deligne.GL1.normalizedValue\_modOne\_four}; the $\chi_{-4}$ check is not yet, and has no
+  Lean statement in the project. The $\chi_{-4}$ check is the one
+  that pins the Gauss sum factor, since $\tau(\mathbf{1}) = 1$ makes the $\zeta$
+  checks blind to it, and it is therefore the one worth the effort. If
+  $L(\chi_{-4},1) = \pi/4$ is not directly available it follows from
+  Theorem~\ref{thm:gl1-pos} itself --- but then it is no longer an independent check,
+  and should be replaced by one that is.
+\end{remark}
+
+The next three lemmas are the obligations Definition~\ref{def:pkg} and \S\ref{sec:guards}
+impose. They sit at different depths, and the difference is the subject of
+Remark~\ref{rem:not-a-pkg}: Lemma~\ref{lem:gl1-period-ne-zero} discharges requirement (x)
+and Lemma~\ref{lem:values-algebraic} requirement (ix), both fields of the structure, so without
+them Definition~\ref{def:gl1-pkg} does not typecheck at all; and
+Lemma~\ref{lem:gl1-nondegenerate} discharges
+Definition~\ref{def:hasCriticalInteger}, a predicate proved about the package afterwards, so
+without it the package still exists but says nothing at any object.
+
+\begin{lemma}[Nondegeneracy: a critical integer exists]
+  \label{lem:gl1-nondegenerate}
+  \lean{Deligne.GL1.exists\_isCritical, Deligne.GL1.hasCriticalInteger\_pkg}
+  \leanok
+  \uses{def:gl1-critical, def:hasCriticalInteger}
+  Every $\chi$ has a critical integer; equivalently, every object of
+  Definition~\ref{def:gl1-pkg} is nondegenerate in the sense of
+  Definition~\ref{def:hasCriticalInteger}.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Take $n = 1$ if $\chi$ is odd and $n = 2$ if $\chi$ is even; both are positive and
+  congruent to $\delta$ modulo $2$. Exhaustiveness is
+  \lean{DirichletCharacter.even_or_odd}.
+\end{proof}
+
+\begin{lemma}[Requirement (x): the period does not vanish]
+  \label{lem:gl1-period-ne-zero}
+  \lean{Deligne.GL1.period\_ne\_zero}
+  \leanok
+  \uses{def:gl1-period, def:pkg, cor:gaussSum-ne-zero}
+  Let $\chi$ be primitive modulo $N \geq 1$. Then $c^{+}(M(\chi)(n)) \neq 0$ for
+  \emph{every} $n \in \Z$, critical or not.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Split on the branch of Definition~\ref{def:gl1-period}. For $n \leq 0$ the period is
+  $1$. For $n \geq 1$ it is $\tau(\chi)\,(2\pi i)^{n}$, a product of two nonzero
+  factors: $\tau(\chi) \neq 0$ is Corollary~\ref{cor:gaussSum-ne-zero}, which is where
+  primitivity is used and is the only substantive input; and
+  $(2\pi i)^{n} \neq 0$ since $\pi \neq 0$ and $i \neq 0$, an integer power of a
+  nonzero complex number being nonzero.
+
+  The statement is deliberately stronger than requirement (x) demands --- it drops the
+  criticality hypothesis, which the proof never uses. Making it unconditional keeps the
+  lemma independent of Definition~\ref{def:gl1-critical}, so a later change to the
+  critical set cannot break the package's definition.
+
+  Note the shape of the dependency: primitivity is a hypothesis on \emph{objects of the
+  package}, and the package is indexed by primitive characters precisely so that this proof
+  has the hypothesis available at every object. That is the reason for the subtype in
+  Definition~\ref{def:gl1-pkg}, and it is forced by requirement (x), not chosen for
+  convenience.
+\end{proof}
+
+\begin{lemma}[The values of $\chi$ are algebraic]
+  \label{lem:values-algebraic}
+  \lean{DirichletCharacter.isAlgebraic\_apply}
+  \leanok
+  Every value $\chi(a)$ of a Dirichlet character modulo $N \geq 1$ is algebraic over $\Q$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  If $a$ is not a unit then $\chi(a)=0$. If it is, then
+  $\chi^{\,\#(\Z/N)^{\times}} = 1$, so $\chi(a)$ is a root of unity, hence a root of
+  $X^{\#(\Z/N)^{\times}} - 1$.
+\end{proof}
+
+It is far from sharp --- $\Q(\chi)$ is a subfield of $\Q(\zeta_{N})$, so a number field --- but
+it is all that is needed; see Remark~\ref{rem:valueField-bounded}.
+
+\section{The non-positive half}
+\label{sec:gl1-negative}
+
+This is the engine of the whole case. At a critical $n \leq 0$ the period is $1$, so
+the assertion is that $L(\chi,n)$ is \emph{itself} an element of $\Q(\chi)$. The
+positive half is then deduced from this by the functional equation, because
+$n \mapsto 1-n$ exchanges the two halves of the critical set. So this half cannot be
+postponed: it is what the other half is proved from.
+
+\begin{definition}[Generalised Bernoulli number]
+  \label{def:genBernoulli}
+  \lean{DirichletCharacter.genBernoulli}
+  \leanok
+  For $\chi$ modulo $N$ valued in a field $L$ of characteristic zero,
+  \[ B_{k,\chi} \;=\; N^{k-1} \sum_{a=1}^{N} \chi(a)\, B_k\!\left(\tfrac{a}{N}\right), \]
+  where $B_k$ is the $k$-th Bernoulli polynomial (\lean{Polynomial.bernoulli}).
+  Washington, \emph{Introduction to Cyclotomic Fields}, \S4.1, Prop.~4.1. The range
+  $1 \leq a \leq N$ matters: it makes the trivial-character case reduce to
+  $B_k(1) = \lean{bernoulli'}\ k$.
+\end{definition}
+
+\begin{lemma}[Generalised Bernoulli numbers are rational combinations of character values]
+  \label{lem:genBernoulli-ratCast}
+  \lean{DirichletCharacter.genBernoulli\_eq\_ratCast\_mul\_sum}
+  \leanok
+  \uses{def:genBernoulli}
+  Let $L$ be a field of characteristic zero, $\iota : \Q \to L$ its canonical embedding, and
+  $\chi$ a Dirichlet character modulo $N$ valued in $L$. Then
+  \[ B_{k,\chi} \;=\; \iota(r_{N,k}) \sum_{a=0}^{N-1} \chi(a+1)\, \iota(b_{k,a}),
+     \qquad r_{N,k} = N^{k-1} \in \Q, \qquad b_{k,a} = B_k\!\left(\tfrac{a+1}{N}\right) \in \Q. \]
+  That is: every factor of Definition~\ref{def:genBernoulli} other than the values of $\chi$
+  themselves is the image of an explicit rational number.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Definition~\ref{def:genBernoulli} already has this shape, so the only point needing an
+  argument is that the Bernoulli polynomial may be evaluated in $\Q$ \emph{before} being mapped
+  to $L$ rather than after. That is
+  \lean{Polynomial.aeval\_algebraMap\_apply\_eq\_algebraMap\_eval} applied to the
+  $\Q$-algebra $L$: evaluating $\iota_{*}B_k$ at $\iota(q)$ is $\operatorname{aeval}$, which
+  commutes with the structure map, giving
+  $\operatorname{eval}_{\iota(q)}(\iota_{*}B_k) = \iota(\operatorname{eval}_q B_k)$. The
+  argument $(a+1)/N$ is itself $\iota$ of a rational, as is $N^{k-1}$.
+
+  This single fact is what both Lemma~\ref{lem:genBernoulli-mem} and
+  Lemma~\ref{lem:genBernoulli-galois} rest on, which is why it is separated out. Once the
+  non-character factors are exhibited as rationals, the first is closed by the fact that every
+  subfield of $\C$ contains $\Q$, and the second by the fact that every automorphism of $\C$
+  fixes $\Q$ pointwise. Neither needs to know anything further about Bernoulli polynomials.
+\end{proof}
+
+\begin{theorem}[Values at non-positive integers]
+  \label{thm:LFunction-neg-nat}
+  \lean{PadicLFunctions.LFunction\_neg\_nat}
+  \leanok
+  \uses{def:genBernoulli, lem:hurwitz-neg-nat-Ioo}
+  For every $k \in \N$,
+  \[ L(\chi,-k) \;=\; -\,\frac{B_{k+1,\chi}}{k+1}. \]
+\end{theorem}
+\begin{proof}
+  \uses{lem:hurwitz-neg-nat-Ioo}
+  Split on $N$.
+
+  \emph{Level one.} $\chi = \mathbf{1}$ by \lean{DirichletCharacter.level\_one}, and
+  \lean{ZMod.LFunction\_modOne\_eq} identifies $L(\mathbf{1},s)$ with $\zeta(s)$.
+  Conclude with \lean{riemannZeta\_neg\_nat\_eq\_bernoulli'} and the evaluation
+  $B_k(1) = \lean{bernoulli'}\ k$ of Definition~\ref{def:genBernoulli}.
+
+  \emph{Level $N > 1$.} Expand using
+  \[ \lean{ZMod.LFunction}\ \Phi\ s \;=\; N^{-s} \sum_{j \in \Z/N} \Phi(j)\, \zeta_H\!\left(\tfrac{j}{N}, s\right), \]
+  which is the definition of \lean{ZMod.LFunction}. Since $\chi$ is a character of
+  $(\Z/N)^{\times}$ and $0$ is not a unit for $N > 1$, we have $\chi(0) = 0$
+  (\lean{MulChar.map\_nonunit}), so the $j = 0$ term drops and the sum runs over
+  $j/N \in (0,1)$ strictly. Apply Lemma~\ref{lem:hurwitz-neg-nat-Ioo} at $s = -k$ to
+  each remaining term and collect: the result is exactly
+  $-B_{k+1,\chi}/(k+1)$ after rewriting $N^{k}$ against the $N^{k+1-1}$ of
+  Definition~\ref{def:genBernoulli}.
+\end{proof}
+
+\begin{lemma}[Hurwitz zeta at non-positive integers, interior form]
+  \label{lem:hurwitz-neg-nat-Ioo}
+  \lean{PadicLFunctions.hurwitzZeta\_neg\_nat\_of\_mem\_Ioo}
+  \leanok
+  For every $k \in \N$ and every real $x$ with $0 < x < 1$,
+  \[ \zeta_H(x,-k) \;=\; \frac{-1}{k+1}\, B_{k+1}(x). \]
+\end{lemma}
+\begin{proof}
+  \uses{lem:hurwitzZetaOdd-zero}
+  For $k \neq 0$ this is mathlib's \lean{HurwitzZeta.hurwitzZeta\_neg\_nat}, whose
+  hypotheses are $k \neq 0$ and $x \in [0,1]$ --- both satisfied.
+
+  For $k = 0$ mathlib's lemma does not apply, and its docstring records this as an
+  open TODO. Decompose $\zeta_H = \zeta_H^{\mathrm{even}} + \zeta_H^{\mathrm{odd}}$.
+  By \lean{HurwitzZeta.hurwitzZetaEven\_apply\_zero},
+  \[ \zeta_H^{\mathrm{even}}(x,0) = \begin{cases} -1/2 & x \equiv 0, \\ 0 & \text{otherwise},\end{cases} \]
+  and $x \in (0,1)$ gives $x \not\equiv 0$ in $\R/\Z$, so the even part vanishes.
+  Lemma~\ref{lem:hurwitzZetaOdd-zero} supplies the odd part, and
+  $B_1(x) = x - 1/2$ (\lean{Polynomial.bernoulli\_one}) finishes.
+
+  The restriction to the \emph{open} interval is essential and not a technicality:
+  at $x = 0$ the identity genuinely fails, since
+  $\zeta_H(0,0) = \zeta(0) = -1/2 \neq -B_1(0) = 1/2$. This is the jump of the
+  sawtooth, and it is why Theorem~\ref{thm:LFunction-neg-nat} needs $\chi(0) = 0$.
+\end{proof}
+
+\begin{lemma}[The sawtooth boundary value]
+  \label{lem:hurwitzZetaOdd-zero}
+  \lean{PadicLFunctions.hurwitzZetaOdd\_apply\_zero\_of\_mem\_Ioo}
+  \leanok
+  For real $x$ with $0 < x < 1$, $\zeta_H^{\mathrm{odd}}(x,0) = \tfrac12 - x$.
+\end{lemma}
+\begin{proof}
+  Apply \lean{HurwitzZeta.hurwitzZetaOdd\_one\_sub} at $s = 1$ (its hypothesis
+  $\forall n \in \N,\ s \neq -n$ holds), giving
+  \[ \zeta_H^{\mathrm{odd}}(x,0) \;=\; 2 (2\pi)^{-1} \Gamma(1) \sin(\pi/2)\, Z_{\sin}(x,1)
+     \;=\; \pi^{-1} Z_{\sin}(x,1). \]
+  So the claim reduces to the boundary value of the sine zeta function,
+  $Z_{\sin}(x,1) = \pi(\tfrac12 - x)$, which is the classical sawtooth Fourier series
+  $\sum_{n \geq 1} \sin(2\pi n x)/n = \pi(\tfrac12 - x)$ on $(0,1)$. This is not in
+  mathlib: the Dirichlet series defining $Z_{\sin}$ converges only conditionally at
+  $s = 1$, so it must be reached by an Abel limit
+  (\lean{Mathlib.Analysis.Complex.AbelLimit}) together with a uniform bound on the
+  partial sums of $\sum \sin(2\pi n x)$.
+
+  \textbf{Source.} That argument is not carried out here. This lemma, and
+  Lemma~\ref{lem:hurwitz-neg-nat-Ioo} and Theorem~\ref{thm:LFunction-neg-nat} above it,
+  are taken \emph{sorry-free} from AINTLIB
+  (\url{https://github.com/CBirkbeck/AINTLIB}), as
+  \lean{sinZeta\_one\_eq\_boundary},
+  \lean{hurwitzZetaOdd\_apply\_zero\_of\_mem\_Ioo} and
+  \lean{hurwitzZeta\_neg\_nat\_of\_mem\_Ioo} in
+  \path{projects/PadicLFunctions/PadicLFunctions/Interpolation/Sawtooth.lean}
+  (617 lines), and as \lean{LFunction\_neg\_nat} in the adjacent
+  \path{GenBernoulliComplex.lean} (74 lines). \emph{Sawtooth.lean} imports only
+  mathlib plus AINTLIB's \path{Common/Analysis/DirichletBounds.lean}, so the needed
+  slice is four files. All of it has been built in this workspace, which is what the
+  \leanok\ above records; see Remark~\ref{rem:aintlib}.
+\end{proof}
+
+\begin{remark}[On depending on AINTLIB]
+  \label{rem:aintlib}
+  \emph{Resolved.} This project and AINTLIB now agree on
+  \lean{leanprover/lean4:v4.34.0-rc2} and on mathlib \texttt{e4b72ca0d01c}, so the two
+  dependencies resolve to a single mathlib rather than conflicting.
+
+  The open risk this remark used to record was that AINTLIB's own \path{lakefile.toml}
+  marks the \lean{PadicLFunctions} library as ``need a mathlib bump to compile \dots\
+  built on demand'' and excludes it from \lean{defaultTargets}, so it was not
+  known-green even against AINTLIB's own pin. It has since been built in this
+  workspace: \path{PadicLFunctions.Interpolation.GenBernoulliComplex} and its
+  transitive closure, including \path{Sawtooth.lean}, compile without error. The
+  \leanok\ marks on Theorem~\ref{thm:LFunction-neg-nat},
+  Lemma~\ref{lem:hurwitz-neg-nat-Ioo} and Lemma~\ref{lem:hurwitzZetaOdd-zero} record
+  that, and rest on an actual build here rather than on AINTLIB's say-so.
+
+  The fallback is therefore no longer needed, but it is worth keeping on record: were
+  the dependency ever dropped, only Lemma~\ref{lem:hurwitzZetaOdd-zero} would have to
+  be reproved in-project from the Abel-limit argument above, and the gap would be
+  confined to $n = 0$ for odd $\chi$.
+\end{remark}
+
+\begin{lemma}[Rationality of generalised Bernoulli numbers]
+  \label{lem:genBernoulli-mem}
+  \lean{Deligne.GL1.genBernoulli\_mem\_valueField}
+  \leanok
+  \uses{def:genBernoulli, def:valueField, lem:genBernoulli-ratCast}
+  $B_{k,\chi} \in \Q(\chi)$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Immediate from Definition~\ref{def:genBernoulli}: $N^{k-1}$ is rational, the
+  Bernoulli polynomial has rational coefficients and is evaluated at the rational
+  points $a/N$, each $\chi(a)$ lies in $\Q(\chi)$ by construction, and
+  $\Q(\chi)$ is a subfield of $\C$ hence contains $\Q$ and is closed under the finite
+  sum and products involved.
+\end{proof}
+
+\begin{lemma}[Galois equivariance of generalised Bernoulli numbers]
+  \label{lem:genBernoulli-galois}
+  \lean{Deligne.GL1.genBernoulli\_galoisConj}
+  \leanok
+  \uses{def:genBernoulli, def:galoisConj, lem:genBernoulli-ratCast}
+  $\sigma(B_{k,\chi}) = B_{k,\chi^{\sigma}}$ for every $\sigma \in \operatorname{Gal}(\C/\Q)$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  $\sigma$ is a ring homomorphism, so it commutes with the finite sum and the
+  products in Definition~\ref{def:genBernoulli}. It fixes $\Q$ pointwise, hence fixes
+  $N^{k-1}$ and each value $B_k(a/N)$ of a rational polynomial at a rational point.
+  The only remaining factors are the $\chi(a)$, and $\sigma(\chi(a)) = \chi^{\sigma}(a)$
+  by Definition~\ref{def:galoisConj}.
+\end{proof}
+
+\begin{theorem}[Non-positive half]
+  \label{thm:gl1-nonpos}
+  \lean{Deligne.GL1.isArithmetic\_of\_nonpos, Deligne.GL1.isEquivariant\_of\_nonpos,
+    Deligne.GL1.normalizedValue\_of\_nonpos, Deligne.GL1.normalizedValue\_neg\_natCast}
+  \leanok
+  \uses{thm:LFunction-neg-nat, lem:genBernoulli-mem, lem:genBernoulli-galois, def:gl1-period}
+  Let $n \leq 0$ be critical for $\chi$. Then $L(\chi,n)/c^{+}(M(\chi)(n)) \in \Q(\chi)$,
+  and for every $\sigma \in \operatorname{Gal}(\C/\Q)$,
+  $\sigma(L(\chi,n)) = L(\chi^{\sigma},n)$.
+\end{theorem}
+\begin{proof}
+  \leanok
+  \uses{thm:LFunction-neg-nat, lem:genBernoulli-mem, lem:genBernoulli-galois}
+  Write $n = -k$ with $k \in \N$. By Definition~\ref{def:gl1-period} the period is
+  $1$, so the normalised value is $L(\chi,-k)$ itself. Algebraicity is
+  Theorem~\ref{thm:LFunction-neg-nat} followed by
+  Lemma~\ref{lem:genBernoulli-mem} (and closure of $\Q(\chi)$ under division by the
+  nonzero rational $k+1$). Equivariance is Theorem~\ref{thm:LFunction-neg-nat} on both
+  sides with Lemma~\ref{lem:genBernoulli-galois} in between; the period is $1$ on both
+  sides and $\sigma(1) = 1$.
+
+  Note that criticality is not used here: Theorem~\ref{thm:LFunction-neg-nat} holds at
+  every non-positive integer, so the conclusion does too. (At the non-critical
+  non-positive integers the value is in fact $0$, by the parity vanishing
+  $B_{k,\chi} = 0$ for $k \not\equiv \delta \pmod 2$ --- but that vanishing is not
+  stated in this blueprint and nothing below depends on it, so it is not claimed
+  here.)
+\end{proof}
+
+\section{The positive half}
+\label{sec:gl1-positive}
+
+This is the half where the period is a genuine transcendental, and so the half that
+actually exercises the framework. It is a corollary of \S\ref{sec:gl1-negative} and
+mathlib's functional equation, not an independent argument.
+
+\begin{lemma}[When two characters share a critical integer]
+  \label{lem:gl1-common-critical}
+  \lean{Deligne.GL1.exists\_isCritical\_and\_isCritical\_iff}
+  \leanok
+  \uses{def:gl1-critical}
+  Two Dirichlet characters $\chi_1, \chi_2$ (of any moduli) have a common critical integer if
+  and only if they have the same parity.
+\end{lemma}
+\begin{proof}
+  \leanok
+  By Definition~\ref{def:gl1-critical} the critical set of an even character is
+  $\{n \geq 2 \text{ even}\} \cup \{n \leq -1 \text{ odd}\}$ and that of an odd character is
+  $\{n \geq 1 \text{ odd}\} \cup \{n \leq 0 \text{ even}\}$. Same parity: take $n = 2$ if both
+  are even and $n = 1$ if both are odd. Opposite parity: the two sets are disjoint, since on
+  $n \geq 1$ they demand opposite parities of $n$ and on $n \leq 0$ they likewise do.
+
+  This is the obstruction of Remark~\ref{rem:sum-obstruction}: it is why
+  Definition~\ref{def:hasCriticalInteger} is not inherited by Definition~\ref{def:sum}, and
+  why $\zeta_K$ for $K$ imaginary quadratic has no critical integers.
+\end{proof}
+
+\begin{lemma}[Criticality transfers across the functional equation]
+  \label{lem:crit-one-sub}
+  \lean{Deligne.GL1.isCritical\_one\_sub\_iff}
+  \leanok
+  \uses{def:gl1-critical, lem:even-inv}
+  Let $n \geq 1$. Then $n$ is critical for $\chi$ if and only if $1-n \leq 0$ is
+  critical for $\chi^{-1}$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  $\chi^{-1}$ has the same parity as $\chi$ (Lemma~\ref{lem:even-inv}). Writing $n = 2r + \delta$ with $r \geq 0$, we get
+  $1 - n = 1 - 2r - \delta$, so $1-n \equiv 1 - \delta \not\equiv \delta \pmod 2$,
+  which is exactly the non-positive branch of Definition~\ref{def:gl1-critical}.
+\end{proof}
+
+\begin{lemma}[Value field is inversion-invariant]
+  \label{lem:valueField-inv}
+  \lean{Deligne.GL1.valueField\_inv}
+  \leanok
+  \uses{def:valueField}
+  $\Q(\chi^{-1}) = \Q(\chi)$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  On units $\chi^{-1}(a) = \chi(a)^{-1}$, and off the units both characters vanish. So
+  every value of $\chi^{-1}$ is either $0$ or the inverse of a value of $\chi$, and
+  $\Q(\chi)$ --- being a subfield of $\C$ --- contains both. Hence
+  $\operatorname{range}\chi^{-1} \subseteq \Q(\chi)$ and, by minimality of
+  \lean{IntermediateField.adjoin}, $\Q(\chi^{-1}) \subseteq \Q(\chi)$. The reverse inclusion is
+  the same argument with $\chi$ and $\chi^{-1}$ exchanged, using $(\chi^{-1})^{-1} = \chi$.
+
+  (No appeal to complex conjugation is needed. It is true that the values are roots of
+  unity and hence that $\chi^{-1}(a) = \overline{\chi(a)}$, but that requires
+  $|\chi(a)| = 1$ and buys nothing here.)
+\end{proof}
+
+\begin{lemma}[The Gamma factor does not vanish at the mirror point]
+  \label{lem:gamma-ne-zero}
+  \lean{Deligne.GL1.gammaFactor\_neg\_natCast\_ne\_zero}
+  \leanok
+  \uses{def:gl1-critical, lem:gammaR-odd-ne-zero}
+  Let $k \in \N$ and suppose $k+1$ is critical for $\chi$. Then $\gamma(\chi, -k) \neq 0$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Write $\delta = 0$ if $\chi$ is even and $\delta = 1$ if $\chi$ is odd, so that
+  $\gamma(\chi,s) = \Gamma_{\R}(s+\delta)$. Criticality at $n = k+1 \geq 1$ says
+  $n \equiv \delta \pmod 2$, i.e.\ $k+1+\delta$ is even, so $k+\delta$ is odd and therefore
+  so is $-k+\delta$. Now apply Lemma~\ref{lem:gammaR-odd-ne-zero}.
+
+  Note that the companion statement $\gamma(\chi,k+1) \neq 0$
+  (Lemma~\ref{lem:gammaFactor-pos-ne-zero}) needs no criticality hypothesis at all, which is
+  why the two live in different chapters: only this one is about the critical set.
+\end{proof}
+
+\begin{lemma}[Root number times Gamma quotient]
+  \label{lem:gamma-quotient}
+  \lean{Deligne.GL1.rootNumber\_mul\_gammaFactor\_quotient}
+  \leanok
+  \uses{def:gl1-critical, lem:gammaR-refl-even, lem:gammaR-refl-odd, lem:gammaC-natCast,
+    lem:cos-natCast-mul-pi}
+  Let $k \in \N$ and suppose $k+1$ is critical for $\chi$. Then
+  \[ W(\chi)\,\frac{\gamma(\chi,-k)}{\gamma(\chi,k+1)}
+     \;=\; \frac{\tau(\chi)}{N^{1/2}} \cdot
+           \frac{\chi(-1)\,(2\pi i)^{k+1}}{2 \cdot k!}, \]
+  where $W(\chi) = \lean{rootNumber}\ \chi = \tau(\chi)\, i^{-\delta} N^{-1/2}$ and
+  $\delta \in \{0,1\}$ is the parity of $\chi$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  This is the archimedean heart of the positive half, and it is deliberately stated as one
+  identity rather than two. The factor $i^{-\delta}$ inside $W(\chi)$ and the sign produced by
+  the reflection formula \emph{each} depend on the parity of $\chi$; their product does not.
+  Separating them would force mathlib's conditional
+  $i^{(\text{if } \chi \text{ even then } 0 \text{ else } 1)}$ into the statement, and would
+  then require it to be cancelled again at the point of use.
+
+  Write $n = k+1$ and split on parity. In both cases the hypothesis of
+  Lemmas~\ref{lem:gammaR-refl-even} and~\ref{lem:gammaR-refl-odd} at $s = n$ holds, since
+  $n \geq 1$ is not of the form $-j$ with $j \in \N$.
+
+  \emph{$\chi$ even ($\delta = 0$).} Criticality makes $n$ even, say $k = 2r+1$ and
+  $n = 2r+2$. Here $\gamma(\chi,s) = \Gamma_{\R}(s)$, and $-k = 1-n$, so
+  Lemma~\ref{lem:gammaR-refl-even} gives
+  $\gamma(\chi,-k)/\gamma(\chi,n) = (\Gamma_{\C}(n)\cos(\pi n/2))^{-1}$. Now
+  $\cos(\pi n/2) = \cos((r+1)\pi) = (-1)^{r+1}$ by Lemma~\ref{lem:cos-natCast-mul-pi}, and
+  $\Gamma_{\C}(n)^{-1} = 2^{k}\pi^{n}/k!$ by Lemma~\ref{lem:gammaC-natCast}. On the right,
+  $\chi(-1) = 1$ and $i^{n} = i^{2r+2} = (-1)^{r+1}$; both sides are
+  $\tau(\chi) N^{-1/2} (-1)^{r+1} 2^{k}\pi^{n}/k!$.
+
+  \emph{$\chi$ odd ($\delta = 1$).} Criticality makes $n$ odd, say $k = 2r$ and $n = 2r+1$.
+  Here $\gamma(\chi,s) = \Gamma_{\R}(s+1)$, and $-k+1 = 2-n$, so
+  Lemma~\ref{lem:gammaR-refl-odd} gives
+  $\gamma(\chi,-k)/\gamma(\chi,n) = (\Gamma_{\C}(n)\sin(\pi n/2))^{-1}$, with
+  $\sin(\pi n/2) = \cos(r\pi) = (-1)^{r}$, again by
+  Lemma~\ref{lem:cos-natCast-mul-pi} after $\sin(x + \pi/2) = \cos x$. On the right, $\chi(-1) = -1$ and
+  $i^{n} = i^{2r+1} = (-1)^{r} i$, while on the left $W(\chi)$ carries $i^{-1} = -i$; both
+  sides are $-i\,\tau(\chi) N^{-1/2} (-1)^{r} 2^{k}\pi^{n}/k!$.
+\end{proof}
+
+\begin{proposition}[The functional equation at a positive critical integer]
+  \label{prop:pos-fe}
+  \lean{Deligne.GL1.LFunction\_natCast\_add\_one}
+  \leanok
+  \uses{lem:gamma-quotient, lem:gamma-ne-zero, lem:gammaFactor-inv,
+    lem:gammaFactor-pos-ne-zero}
+  Let $\chi$ be primitive modulo $N$, let $k \in \N$ and suppose $k+1$ is critical for
+  $\chi$. Then
+  \[ L(\chi, k+1) \;=\; \tau(\chi)\,(2\pi i)^{k+1} \cdot
+       \frac{\chi(-1)}{2\,N^{k+1}\,k!} \cdot L(\chi^{-1}, -k). \]
+\end{proposition}
+\begin{proof}
+  \leanok
+  \uses{lem:gamma-quotient, lem:gamma-ne-zero}
+  Mathlib's functional equation
+  \lean{DirichletCharacter.IsPrimitive.completedLFunction\_one\_sub} reads, for primitive
+  $\chi$,
+  \[ \Lambda(\chi, 1-s) \;=\; N^{s-1/2}\, W(\chi)\, \Lambda(\chi^{-1}, s). \]
+  Put $s = -k$, so $1-s = k+1$. Convert both completed functions to ordinary ones with
+  \lean{DirichletCharacter.LFunction\_eq\_completed\_div\_gammaFactor}, read in the direction
+  $\Lambda = L\cdot\gamma$: this is licensed by
+  Lemma~\ref{lem:gammaFactor-pos-ne-zero} at $s = k+1$ and by Lemma~\ref{lem:gamma-ne-zero}
+  at $s = -k$, the latter transported from $\chi^{-1}$ to $\chi$ by
+  Lemma~\ref{lem:gammaFactor-inv}. That lemma's side condition ($s \neq 0$ or $N \neq 1$)
+  holds at $s = k+1$ because $k+1 \neq 0$, and at $s = -k$ because it can fail only when
+  $k = 0$ and $N = 1$; but the character modulo $1$ is even, so criticality of $n = 1$ would
+  demand that $1$ be even. Rearranging,
+  \[ L(\chi,k+1) \;=\; N^{-k-1/2}\, W(\chi)\,
+       \frac{\gamma(\chi^{-1},-k)}{\gamma(\chi,k+1)}\, L(\chi^{-1},-k), \]
+  and Lemma~\ref{lem:gammaFactor-inv} followed by Lemma~\ref{lem:gamma-quotient} evaluates the
+  middle factor. The two half-powers of $N$ combine,
+  $N^{-k-1/2}\cdot N^{-1/2} = N^{-(k+1)}$, an integral power, which is the first of the two
+  cancellations of Remark~\ref{rem:pos-cancellations}.
+\end{proof}
+
+\begin{proposition}[Reduction of the positive half]
+  \label{prop:pos-reduction}
+  \lean{Deligne.GL1.normalizedValue\_natCast\_add\_one}
+  \leanok
+  \uses{def:gl1-period, prop:pos-fe, lem:gl1-period-ne-zero}
+  Let $\chi$ be primitive modulo $N$, let $n = k+1 \geq 1$ be critical for $\chi$. Then
+  \[ \frac{L(\chi,n)}{c^{+}(M(\chi)(n))} \;=\;
+     \frac{\chi(-1)}{2\,N^{n}\,(n-1)!}\; L(\chi^{-1},1-n). \]
+  In particular the right-hand side is $\chi(-1)$ times a \emph{rational} multiple of
+  $L(\chi^{-1},1-n)$, and the Gauss sum has cancelled.
+\end{proposition}
+\begin{proof}
+  \leanok
+  \uses{prop:pos-fe}
+  By Definition~\ref{def:gl1-period} the period at $n \geq 1$ is
+  $c^{+} = \tau(\chi)(2\pi i)^{n}$, which is exactly the first factor of
+  Proposition~\ref{prop:pos-fe} and is nonzero by
+  Lemma~\ref{lem:gl1-period-ne-zero}. Divide.
+\end{proof}
+
+\begin{remark}[The scalar, and two cancellations]
+  \label{rem:pos-cancellations}
+  The closed form of Proposition~\ref{prop:pos-reduction} is simpler than the shape in which
+  such a formula is usually quoted, and the simplification is not cosmetic --- it is what
+  makes both halves of Theorem~\ref{thm:gl1-pos} short. Running the computation through the
+  half-integer values of $\Gamma$ instead produces
+  \[ \frac{(-1)^{m} q_{n,\delta}}{(2N)^{n}}, \qquad
+     q_{n,\delta} = \frac{(-4)^{r} r!}{(2r)!\,\Gamma(r+\delta)}, \qquad n = 2r+\delta, \;
+     m = r+\delta, \]
+  and one checks, in each parity separately, that this equals
+  $\chi(-1)/(2N^{n}(n-1)!)$: for $\delta = 0$ it is
+  $(-1)^{2r} 2^{2r-1}/((2r-1)!\,2^{2r}N^{n})$, and for $\delta = 1$ it is
+  $-2^{2r}/((2r)!\,2^{2r+1}N^{n})$. The sign is $(-1)^{\delta} = \chi(-1)$, and using
+  $\chi(-1)$ rather than $(-1)^{\delta}$ is what removes parity bookkeeping from the proofs
+  of Theorem~\ref{thm:gl1-pos} and Theorem~\ref{thm:gl1-pos-equiv}: $\chi(-1)$ is visibly a
+  value of $\chi$, hence in $\Q(\chi)$, and $\sigma(\chi(-1)) = \chi^{\sigma}(-1)$ is the
+  definition of the Galois action.
+
+  Two cancellations make the answer land in $\Q(\chi)$ rather than a larger field. The
+  $\sqrt{N}$ inside $W(\chi)$ cancels against $N^{s-1/2}$ at $s = 1-n$, leaving an integral
+  power of $N$. The $i^{-\delta}$ inside $W(\chi)$ cancels against the $i^{n}$ coming from
+  $(2\pi i)^{n}$, and this works \emph{only} because $n \equiv \delta \pmod 2$. Criticality is
+  doing real work here; it is also the reason the period of Definition~\ref{def:gl1-period}
+  needs no separate power of $i$.
+
+  Finally, the formula can be checked against the two values already computed independently
+  in Lemma~\ref{lem:gl1-numeric}. At $N = 1$ and $n = 2$ it gives
+  $\zeta(-1)/2 = -1/24$, and at $n = 4$ it gives $\zeta(-3)/12 = 1/1440$; both agree, using
+  $\zeta(-1) = -1/12$ and $\zeta(-3) = 1/120$. These are the only two independent numerical
+  anchors the development currently has, and the closed form was verified against both before
+  it was formalised.
+\end{remark}
+
+\begin{theorem}[Positive half: algebraicity]
+  \label{thm:gl1-pos}
+  \lean{Deligne.GL1.isArithmetic\_of\_pos}
+  \leanok
+  \uses{prop:pos-reduction, thm:gl1-nonpos, lem:valueField-inv, lem:primitive-inv}
+  Let $n \geq 1$ be critical for $\chi$. Then $L(\chi,n)/c^{+}(M(\chi)(n)) \in \Q(\chi)$.
+\end{theorem}
+\begin{proof}
+  \leanok
+  \uses{prop:pos-reduction, thm:gl1-nonpos, lem:valueField-inv, lem:primitive-inv}
+  Write $n = k+1$. By Lemma~\ref{lem:primitive-inv}, $\chi^{-1}$ is primitive, so
+  Theorem~\ref{thm:gl1-nonpos} applies to it at $-k$ and gives
+  $L(\chi^{-1},-k) \in \Q(\chi^{-1})$, which is $\Q(\chi)$ by
+  Lemma~\ref{lem:valueField-inv}. Proposition~\ref{prop:pos-reduction} exhibits the
+  normalised value as $\chi(-1)$ times a rational multiple of it; $\chi(-1)$ is a value of
+  $\chi$ and so lies in $\Q(\chi)$ by definition, and $\Q(\chi)$ contains $\Q$.
+
+  One step of the expected argument is absent, and its absence is worth recording.
+  Theorem~\ref{thm:gl1-nonpos} is proved for \emph{every} non-positive integer, not only the
+  critical ones --- the generalised Bernoulli number $B_{k+1,\chi}$ lies in $\Q(\chi)$
+  whatever the parity of $k$. So the criticality of $1-n$ for $\chi^{-1}$ is never needed, and
+  Lemma~\ref{lem:crit-one-sub} is not invoked here. It is kept as a statement about the
+  critical set in its own right, not as a step of this proof.
+\end{proof}
+
+\begin{theorem}[Positive half: equivariance]
+  \label{thm:gl1-pos-equiv}
+  \lean{Deligne.GL1.isEquivariant\_of\_pos}
+  \leanok
+  \uses{prop:pos-reduction, thm:gl1-nonpos, lem:primitive-inv, lem:pkg-galoisAction-coe,
+    def:galoisConj}
+  Let $n \geq 1$ be critical for $\chi$ and let $\sigma \in \operatorname{Gal}(\C/\Q)$. Then
+  $\sigma\bigl(L(\chi,n)/c^{+}(M(\chi)(n))\bigr)$ is the corresponding normalised value of
+  $\chi^{\sigma}$.
+\end{theorem}
+\begin{proof}
+  \leanok
+  \uses{prop:pos-reduction, thm:gl1-nonpos, lem:pkg-galoisAction-coe, lem:gl1-galois-transport}
+  Write $n = k+1$. Criticality of $n$ for $\chi^{\sigma}$ is
+  Lemma~\ref{lem:gl1-galois-transport}, so
+  Proposition~\ref{prop:pos-reduction} applies to $\chi^{\sigma}$ as well, with the
+  \emph{same} scalar: it depends only on $N$, $n$ and $\chi(-1)$, and
+  $\sigma(\chi(-1)) = \chi^{\sigma}(-1)$. Apply $\sigma$ to
+  Proposition~\ref{prop:pos-reduction}. The rational factor $1/(2N^{n}(n-1)!)$ is fixed by
+  $\sigma$ because $\sigma$ fixes $\Q$ pointwise, so what remains is
+  $\sigma(L(\chi^{-1},-k)) = L((\chi^{\sigma})^{-1},-k)$. That is the equivariance half of
+  Theorem~\ref{thm:gl1-nonpos} applied to $\chi^{-1}$, together with
+  $(\chi^{-1})^{\sigma} = (\chi^{\sigma})^{-1}$ --- both are $a \mapsto \sigma(\chi(a))^{-1}$,
+  and in Lean this is mathlib's \lean{MulChar.ringHomComp\_inv}. As in
+  Theorem~\ref{thm:gl1-pos}, no criticality of $-k$ is needed.
+\end{proof}
+
+\section{Assembly}
+
+\begin{definition}[Galois conjugation as a group action]
+  \label{def:galoisAction}
+  \lean{Deligne.GL1.galoisAction}
+  \leanok
+  \uses{def:galoisConj, lem:primitive-galois}
+  For $\sigma \in \operatorname{Gal}(\C/\Q)$, the map $\chi \mapsto \chi^{\sigma}$ is a
+  permutation of the primitive Dirichlet characters modulo $N$, with inverse
+  $\chi \mapsto \chi^{\sigma^{-1}}$, and $\sigma \mapsto (\chi \mapsto \chi^{\sigma})$ is a
+  group homomorphism $\operatorname{Gal}(\C/\Q) \to \operatorname{Sym}(\{\chi\})$.
+\end{definition}
+\begin{proof}
+  \leanok
+  Well defined by Lemma~\ref{lem:primitive-galois}, and the two round trips are
+  $\sigma^{-1}(\sigma(z)) = z$ and $\sigma(\sigma^{-1}(z)) = z$ applied to each value;
+  $(\chi^{\sigma})^{\tau} = \chi^{\sigma\tau}$ and $\chi^{1} = \chi$ valuewise. This is the
+  form clause (vi) of Definition~\ref{def:pkg} requires, since the Galois action there is a
+  homomorphism into $\operatorname{Sym}(\Omega)$ rather than a bare map.
+\end{proof}
+
+\begin{lemma}[Primitivity is Galois-stable]
+  \label{lem:primitive-galois}
+  \lean{Deligne.GL1.isPrimitive\_galoisConj}
+  \leanok
+  \uses{def:galoisConj, lem:primitive-ringHomComp}
+  If $\chi$ is primitive then so is $\chi^{\sigma}$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  $\chi^{\sigma} = \sigma \circ \chi$ and a ring automorphism is injective, so this is
+  Lemma~\ref{lem:primitive-ringHomComp}. That lemma is the substance: mathlib has no
+  result on the conductor under post-composition, and without one this step --- on which
+  the well-definedness of the whole package depends --- has no proof.
+\end{proof}
+
+\begin{lemma}[Galois conjugation preserves parity and transports the field of values]
+  \label{lem:gl1-galois-transport}
+  \lean{Deligne.GL1.even\_galoisConj, Deligne.GL1.isCritical\_galoisConj\_iff,
+    Deligne.GL1.valueField\_galoisConj}
+  \leanok
+  \uses{def:galoisConj, def:gl1-critical, def:valueField}
+  For every $\sigma \in \operatorname{Gal}(\C/\Q)$, $\chi^{\sigma}$ has the parity of $\chi$,
+  hence the same critical set, and $\Q(\chi^{\sigma}) = \sigma(\Q(\chi))$. These are
+  requirements (vii) and (viii) of Definition~\ref{def:pkg} for the package below.
+\end{lemma}
+\begin{proof}
+  \leanok
+  $\sigma$ fixes $1$ and is injective, so $\sigma(\chi(-1)) = 1$ exactly when
+  $\chi(-1) = 1$; criticality depends on $\chi$ only through its parity. For the field,
+  $\sigma$ maps the generating set $\operatorname{range}\chi$ of $\Q(\chi)$ onto the
+  generating set of $\Q(\chi^{\sigma})$, so $\Q(\chi^{\sigma}) = \sigma(\Q(\chi))$ by
+  \lean{IntermediateField.adjoin\_map}.
+\end{proof}
+
+\begin{definition}[The GL(1) package]
+  \label{def:gl1-pkg}
+  \lean{Deligne.GL1.pkg}
+  \leanok
+  \uses{def:pkg, def:valueField, def:gl1-critical, def:gl1-period, def:galoisAction,
+    lem:primitive-galois, lem:gl1-galois-transport, lem:valueField-algebraic,
+    lem:gl1-nondegenerate, lem:gl1-period-ne-zero}
+  The Deligne package on the type of primitive Dirichlet characters modulo $N$, with
+  $L$ the analytic $L$-function \lean{DirichletCharacter.LFunction}, value field
+  $\Q(\chi)$ (Definition~\ref{def:valueField}, \lean{Deligne.GL1.valueField\_pkg}), period
+  Definition~\ref{def:gl1-period}, and Galois action Definition~\ref{def:galoisConj}
+  (well defined on primitive characters by Lemma~\ref{lem:primitive-galois}). Its weight is $0$
+  --- the Artin motive of a Dirichlet character is pure of weight $0$, so the functional equation
+  exchanges $s$ and $1-s$ --- and its Gamma shifts are $\{0\}$ for $\chi$ even and $\{1\}$ for
+  $\chi$ odd, a single $\Gamma_{\R}$ because the Hodge type is $(0,0)$. The archimedean factor
+  that results is mathlib's own \lean{DirichletCharacter.gammaFactor}
+  (Lemma~\ref{lem:gl1-gammaFactor-pkg}), and the critical set is computed from it --- see
+  Lemma~\ref{lem:gl1-crit-pkg}. Of the requirements of Definition~\ref{def:pkg}, (vii) and
+  (viii) are Lemma~\ref{lem:gl1-galois-transport}, (ix) is Lemma~\ref{lem:valueField-algebraic}
+  and (x) is Lemma~\ref{lem:gl1-period-ne-zero}; nondegeneracy is
+  Lemma~\ref{lem:gl1-nondegenerate}, proved about the package rather than built into it.
+\end{definition}
+
+\begin{lemma}[The package's Gamma factor is mathlib's]
+  \label{lem:gl1-gammaFactor-pkg}
+  \lean{Deligne.GL1.gammaFactor\_pkg, Deligne.GL1.weight\_pkg}
+  \leanok
+  \uses{def:gl1-pkg}
+  For every primitive $\chi$ modulo $N$ and every $s \in \C$, the archimedean factor
+  $\prod_{a} \Gamma_{\R}(s+a)$ determined by the shifts of Definition~\ref{def:gl1-pkg} is
+  \lean{DirichletCharacter.gammaFactor} $\chi\, s$, and the package's weight is $0$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Split on the parity of $\chi$: the multiset of shifts is a singleton, so the product is
+  $\Gamma_{\R}(s+0) = \Gamma_{\R}(s)$ for $\chi$ even and $\Gamma_{\R}(s+1)$ for $\chi$ odd,
+  which is mathlib's definition on the nose. This is what makes the check of
+  Remark~\ref{rem:crit-spec} a comparison against an external object rather than against
+  something this development chose.
+\end{proof}
+
+\begin{lemma}[The critical set is the one computed from the Gamma factor]
+  \label{lem:gl1-crit-pkg}
+  \lean{Deligne.GL1.isCritical\_pkg\_iff}
+  \leanok
+  \uses{def:gl1-pkg, def:gl1-critical, def:isCritical, lem:gl1-gammaFactor-pkg}
+  For every primitive $\chi$ modulo $N$ and every $n \in \Z$, the framework's criticality
+  predicate of Definition~\ref{def:isCritical}, computed from the Gamma shifts and reflected
+  about $w+1-n = 1-n$, holds at $n$ if and only if Definition~\ref{def:gl1-critical} does.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Split on the parity of $\chi$, so that $\gamma(\chi,s) = \Gamma_{\R}(s+\delta)$ with $\delta$
+  the parity. By \lean{Complex.Gammaℝ\_eq\_zero\_iff}, $\Gamma_{\R}(m) = 0$ for $m \in \Z$ exactly
+  when $m \leq 0$ and $m$ is even. For $\chi$ even the two conditions are that $n$ is not a
+  non-positive even integer and $1-n$ is not one either --- that is, $n \notin \{0,-2,-4,\dots\}$
+  and $n \notin \{1,3,5,\dots\}$, leaving the even integers $\geq 2$ and the odd integers
+  $\leq -1$, which is Definition~\ref{def:gl1-critical} for an even character. For $\chi$ odd the
+  same computation at $s+1$ leaves the odd integers $\geq 1$ and the even integers $\leq 0$. Each
+  branch is then integer arithmetic.
+
+  This is the obligation of Remark~\ref{rem:crit-spec}, and it is worth saying what has changed:
+  Definition~\ref{def:gl1-critical} used to \emph{be} the package's critical set by fiat, so a
+  characterisation theorem could only restate it. Now the package's critical set comes from
+  mathlib's Gamma factor and this lemma is a genuine comparison, which either holds or does not.
+\end{proof}
+
+Coherence needs no separate theorem: criticality is Galois-stable for every package
+(Lemma~\ref{lem:isCritical-galois}), and what coherence used to require of GL(1) is now
+Lemma~\ref{lem:gl1-galois-transport}, consumed by Definition~\ref{def:gl1-pkg} itself.
+
+\begin{lemma}[The Galois action on the package, unfolded]
+  \label{lem:pkg-galoisAction-coe}
+  \lean{Deligne.GL1.coe\_galoisAction\_pkg}
+  \leanok
+  \uses{def:gl1-pkg, def:galoisConj}
+  The underlying character of $\sigma \cdot M$ is $\chi^{\sigma}$, where $\chi$ is the
+  underlying character of $M$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  True by definition. It is recorded (and marked \lean{simp}) because the index type of the
+  package is the \emph{subtype} of primitive characters: the Galois action produces an element
+  of that subtype packaged with its primitivity proof, and its first component is therefore
+  only definitionally, not syntactically, equal to $\chi^{\sigma}$. Every rewrite that pushes
+  $\sigma$ through the package needs this bridge.
+\end{proof}
+
+\begin{lemma}[Algebraicity, both halves]
+  \label{lem:gl1-arithmetic-pkg}
+  \lean{Deligne.GL1.isArithmetic\_pkg}
+  \leanok
+  \uses{thm:gl1-pos, thm:gl1-nonpos, def:gl1-pkg}
+  Every primitive $\chi$ modulo $N$ satisfies algebraicity for the package of
+  Definition~\ref{def:gl1-pkg}.
+\end{lemma}
+\begin{proof}
+  \leanok
+  \uses{thm:gl1-pos, thm:gl1-nonpos}
+  Case split on the sign of $n$: Theorem~\ref{thm:gl1-nonpos} for $n \leq 0$ and
+  Theorem~\ref{thm:gl1-pos} for $n \geq 1$.
+\end{proof}
+
+\begin{lemma}[Equivariance, both halves]
+  \label{lem:gl1-equivariant-pkg}
+  \lean{Deligne.GL1.isEquivariant\_pkg}
+  \leanok
+  \uses{thm:gl1-pos-equiv, thm:gl1-nonpos, def:gl1-pkg}
+  Every primitive $\chi$ modulo $N$ satisfies equivariance for the package of
+  Definition~\ref{def:gl1-pkg}.
+\end{lemma}
+\begin{proof}
+  \leanok
+  \uses{thm:gl1-pos-equiv, thm:gl1-nonpos}
+  The same case split, with Theorem~\ref{thm:gl1-pos-equiv} on the positive side.
+\end{proof}
+
+\begin{theorem}[The critical values are nonzero]
+  \label{thm:gl1-nonvanishing}
+  \lean{Deligne.GL1.normalizedValue\_ne\_zero}
+  \leanok
+  \uses{def:gl1-pkg, def:gl1-critical, lem:gl1-period-ne-zero, lem:gl1-nondegenerate}
+  For every primitive $\chi$ modulo $N$ and every critical $n \geq 1$,
+  $L(\chi,n)/c^{+}(M(\chi)(n)) \neq 0$.
+\end{theorem}
+\begin{proof}
+  \leanok
+  The period is nonzero by Lemma~\ref{lem:gl1-period-ne-zero}, so it suffices that
+  $L(\chi,n) \neq 0$. This is mathlib's
+  \lean{DirichletCharacter.LFunction\_ne\_zero\_of\_one\_le\_re}, which excludes only the
+  trivial character at $s = 1$; and that case is never critical, since the character modulo
+  $1$ is even and Definition~\ref{def:gl1-critical} then forces $n$ to be even. For $N > 1$ a
+  primitive character is nontrivial, because the trivial character has conductor $1$.
+
+  This is what Remark~\ref{rem:numeric-status} was reaching for and did not achieve. The
+  guards of \S\ref{sec:guards} rule out the two degenerate \emph{shapes} --- no critical
+  integers, and a vanishing period --- but neither prevents an instance whose normalised
+  values all happen to be $0$, which would satisfy both halves of the conjecture while
+  asserting nothing. This theorem closes that for GL(1), uniformly in the conductor. Note it
+  covers only $n \geq 1$; at the non-positive critical integers the value is a generalised
+  Bernoulli number and its non-vanishing is a separate question, not needed here because
+  Lemma~\ref{lem:gl1-nondegenerate} supplies a positive critical integer for every $\chi$.
+\end{proof}
+
+\begin{theorem}[Deligne's conjecture for GL(1)]
+  \label{thm:gl1-main}
+  \lean{Deligne.GL1.conjecture}
+  \leanok
+  \uses{lem:gl1-arithmetic-pkg, lem:gl1-equivariant-pkg, thm:gl1-pos,
+    thm:gl1-pos-equiv, thm:gl1-nonpos, def:gl1-pkg,
+    lem:gl1-nondegenerate, lem:gl1-crit-spec}
+  The GL(1) package satisfies Deligne's conjecture: for every primitive Dirichlet
+  character $\chi$ modulo $N$ and every critical integer $n$, the normalised value
+  $L(\chi,n)/c^{+}(M(\chi)(n))$ lies in $\Q(\chi)$, and $\operatorname{Gal}(\C/\Q)$
+  carries it to the corresponding value of $\chi^{\sigma}$. Moreover its critical set is the
+  explicit one of Definition~\ref{def:gl1-critical}. Nondegeneracy is
+  Lemma~\ref{lem:gl1-nondegenerate}: unlike the non-vanishing of the period, which is a field of
+  Definition~\ref{def:pkg} and so is carried by the package itself, it is a separate claim
+  about the package --- see Remark~\ref{rem:not-a-pkg}.
+\end{theorem}
+\begin{proof}
+  \leanok
+  \uses{lem:gl1-arithmetic-pkg, lem:gl1-equivariant-pkg}
+  The conjunction of Lemma~\ref{lem:gl1-arithmetic-pkg} and
+  Lemma~\ref{lem:gl1-equivariant-pkg}. The supplementary claim is
+  Lemma~\ref{lem:gl1-crit-spec}.
+\end{proof}

@@ -1,0 +1,314 @@
+\chapter{Dirichlet characters: conductors and Gauss sums}
+\label{chap:dirichlet}
+
+This chapter collects the facts about Dirichlet characters that the GL(1) case needs and
+that mathlib does not record. Nothing here mentions Deligne's conjecture, and all of it
+belongs upstream; it is separated out for that reason.
+
+Two of these results are not bookkeeping. Lemma~\ref{lem:conductor-ringHomComp} is what
+makes the Galois action $\chi \mapsto \chi^{\sigma}$ act on \emph{primitive} characters
+modulo $N$, which is the index type of the GL(1) package
+(Definition~\ref{def:gl1-pkg}). Corollary~\ref{cor:gaussSum-ne-zero} is what makes
+that package exist at all: requirement (x) of Definition~\ref{def:pkg} demands
+$c^{+} \neq 0$ at critical integers, and by Definition~\ref{def:gl1-period} the period at
+$n \geq 1$ is $\tau(\chi)(2\pi i)^{n}$. Both are therefore preconditions for writing the
+package down, not steps inside a later proof.
+
+Throughout, $N \geq 1$ (\lean{NeZero} $N$) and $\chi$ is a Dirichlet character modulo $N$
+with values in a commutative ring $R$. The hypotheses on $R$ are not uniform, and they are
+part of the content, since the point of this chapter is that the results are upstreamable:
+\S\ref{sec:dirichlet-parity} needs $R$ a field for Lemma~\ref{lem:even-inv}, since
+mathlib's \lean{MulChar.inv\_apply\_eq\_inv'} is stated for a \lean{CommGroupWithZero},
+but nothing beyond a commutative ring for Lemma~\ref{lem:even-one};
+\S\ref{sec:dirichlet-conductor} needs a commutative ring throughout, except
+Lemma~\ref{lem:primitive-inv}, which holds over a \lean{CommMonoidWithZero}; and
+\S\ref{sec:dirichlet-gauss} and \S\ref{sec:dirichlet-gammaFactor} are stated for
+$R = \C$. We write
+$\tau(\chi) = \operatorname{gaussSum} \chi\ \lean{ZMod.stdAddChar}$ for the Gauss sum
+against the standard additive character $a \mapsto e^{2\pi i a/N}$, and $\mathcal{F}$ for
+the discrete Fourier transform \lean{ZMod.dft} on functions $\Z/N \to \C$.
+
+\section{Parity}
+\label{sec:dirichlet-parity}
+
+\begin{lemma}[The trivial character is even]
+  \label{lem:even-one}
+  \lean{DirichletCharacter.even\_one}
+  \leanok
+  $\mathbf{1}(-1) = 1$; that is, the trivial Dirichlet character modulo any $m$ is even.
+\end{lemma}
+\begin{proof}
+  \leanok
+  $-1$ is a unit, and \lean{MulChar.one\_apply} says the trivial multiplicative character
+  takes the value $1$ on units. (It is \emph{not} identically $1$: a multiplicative
+  character vanishes off the units, which is why the unit hypothesis is needed.)
+\end{proof}
+
+\begin{lemma}[Inversion preserves parity]
+  \label{lem:even-inv}
+  \lean{DirichletCharacter.even\_inv\_iff}
+  \leanok
+  For $\chi$ valued in a field, $\chi^{-1}$ is even if and only if $\chi$ is.
+\end{lemma}
+\begin{proof}
+  \leanok
+  \lean{MulChar.inv\_apply\_eq\_inv'} gives $\chi^{-1}(a) = \chi(a)^{-1}$ for values in a
+  field, so $\chi^{-1}(-1) = \chi(-1)^{-1}$, and it remains to see $x^{-1} = 1 \iff x = 1$.
+  Backwards this is $1^{-1} = 1$. Forwards, $x^{-1} = 1$ forces $x \neq 0$ --- in a
+  \lean{CommGroupWithZero} one has $0^{-1} = 0 \neq 1$ --- and then $x = (x^{-1})^{-1} = 1$.
+  (At $a = -1$ one could instead note that $-1$ is a unit, so $\chi(-1) \neq 0$ outright,
+  but the displayed argument needs no such appeal.)
+\end{proof}
+
+This is what makes Lemma~\ref{lem:crit-one-sub} true: the functional equation sends $\chi$
+to $\chi^{-1}$, and if that changed the parity it would also change $\delta$, and the
+critical set with it.
+
+\section{The conductor under post-composition}
+\label{sec:dirichlet-conductor}
+
+The conductor of $\chi$ is $\inf \{ d : \chi \text{ factors through } \Z/d \}$
+(\lean{DirichletCharacter.conductor}, defined as $\inf$ of
+\lean{DirichletCharacter.conductorSet}), and $\chi$ is \emph{primitive} when that
+infimum is $N$ itself. Mathlib records how the conductor behaves under inversion
+(\lean{DirichletCharacter.conductor\_inv}) and under change of level
+(\lean{DirichletCharacter.conductor\_changeLevel}), but not under post-composition with a
+ring homomorphism, which is the case the Galois action needs.
+
+\begin{lemma}[Levels are unchanged by an injective post-composition]
+  \label{lem:factorsThrough-ringHomComp}
+  \lean{DirichletCharacter.factorsThrough\_ringHomComp\_iff}
+  \leanok
+  Let $f \colon R \to R'$ be an injective ring homomorphism and $d \in \N$. Then
+  $f \circ \chi$ factors through $\Z/d$ if and only if $\chi$ does.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Note first that no hypothesis $d \mid N$ is needed: divisibility is part of the
+  definition of \lean{DirichletCharacter.FactorsThrough} on \emph{both} sides, so in
+  either direction it is available from the hypothesis being assumed.
+
+  By \lean{DirichletCharacter.factorsThrough\_iff\_ker\_unitsMap}, given $d \mid N$,
+  factoring through $\Z/d$ is equivalent to
+  \[ \ker\!\left( (\Z/N)^{\times} \to (\Z/d)^{\times} \right) \;\leq\; \ker \chi^{\times}, \]
+  where $\chi^{\times}$ is the associated homomorphism of unit groups
+  (\lean{MulChar.toUnitHom}). So it suffices to show the two characters have the
+  \emph{same} unit-group kernel:
+  \[ \ker (f \circ \chi)^{\times} = \ker \chi^{\times}. \]
+  For a unit $u$ this is $f(\chi(u)) = 1 \iff \chi(u) = 1$. The direction
+  ($\Leftarrow$) is $f(1) = 1$; the direction ($\Rightarrow$) is injectivity of $f$
+  applied to $f(\chi(u)) = 1 = f(1)$.
+\end{proof}
+
+\begin{lemma}[Conductor is unchanged by an injective post-composition]
+  \label{lem:conductor-ringHomComp}
+  \lean{DirichletCharacter.conductor\_ringHomComp}
+  \leanok
+  \uses{lem:factorsThrough-ringHomComp}
+  For $f$ an injective ring homomorphism,
+  $\operatorname{cond}(f \circ \chi) = \operatorname{cond}(\chi)$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Lemma~\ref{lem:factorsThrough-ringHomComp} says the two conductor sets are equal as
+  subsets of $\N$ (\lean{Set.ext}), and the conductor is the infimum of that set, so the
+  two infima agree.
+
+  In Lean, unfold \lean{DirichletCharacter.conductor} rather than restating the goal as an
+  equality of infima by hand: the latter bets on how mathlib currently spells the
+  definition, and breaks silently if that changes.
+\end{proof}
+
+\begin{lemma}[Primitivity is stable under an injective post-composition]
+  \label{lem:primitive-ringHomComp}
+  \lean{DirichletCharacter.IsPrimitive.ringHomComp}
+  \leanok
+  \uses{lem:conductor-ringHomComp}
+  If $\chi$ is primitive and $f$ is an injective ring homomorphism, then $f \circ \chi$
+  is primitive.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Primitivity is $\operatorname{cond}(\chi) = N$, and by
+  Lemma~\ref{lem:conductor-ringHomComp} the two sides are the same number.
+\end{proof}
+
+\begin{lemma}[Primitivity is inversion-stable]
+  \label{lem:primitive-inv}
+  \lean{DirichletCharacter.IsPrimitive.inv}
+  \leanok
+  If $\chi$ is primitive modulo $N$ then so is $\chi^{-1}$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Mathlib's \lean{DirichletCharacter.conductor\_inv} already gives
+  $\operatorname{cond}(\chi^{-1}) = \operatorname{cond}(\chi)$, so this is one rewrite.
+
+  It is needed twice: Theorem~\ref{thm:gl1-pos} feeds $\chi^{-1}$ back into
+  Theorem~\ref{thm:gl1-nonpos}, and the package of Definition~\ref{def:gl1-pkg} is
+  indexed by primitive characters, so $\chi^{-1}$ must be an object of the package;
+  and Theorem~\ref{thm:gaussSum-mul-inv} below applies
+  Lemma~\ref{lem:fourierTransform-primitive} to $\chi^{-1}$.
+\end{proof}
+
+\section{Gauss sums of primitive characters}
+\label{sec:dirichlet-gauss}
+
+\begin{remark}[Why mathlib's Gauss sum results do not apply]
+  \label{rem:gaussSum-field}
+  Mathlib proves, for $\chi \neq \mathbf{1}$ and $\psi$ a primitive additive character,
+  \[ \operatorname{gaussSum} \chi\, \psi \cdot
+     \operatorname{gaussSum} \chi^{-1}\, \psi^{-1} \;=\; \#R \]
+  (\lean{gaussSum\_mul\_gaussSum\_eq\_card}) and deduces nonvanishing
+  (\lean{gaussSum\_ne\_zero\_of\_nontrivial}). Note the $\psi^{-1}$ in the second
+  factor: this is \emph{not} the shape of Theorem~\ref{thm:gaussSum-mul-inv}, where both
+  Gauss sums are taken against the same $\psi = \lean{ZMod.stdAddChar}$. The two are
+  reconciled by \lean{mul\_gaussSum\_inv\_eq\_gaussSum},
+  $\chi(-1) \cdot \operatorname{gaussSum} \chi\, \psi^{-1}
+   = \operatorname{gaussSum} \chi\, \psi$, which is exactly where the factor
+  $\chi(-1)$ in Theorem~\ref{thm:gaussSum-mul-inv} comes from: for $N$ prime the two
+  statements agree, and neither contradicts the other.
+
+  What matters here is that both mathlib results live under
+  \verb|variable {R : Type u} [Field R] [Fintype R]| in
+  \verb|Mathlib/NumberTheory/GaussSum.lean|: the hypothesis is on the \emph{source} ring.
+  But $\Z/N$ is a field only for $N$ prime, and the case that matters here is composite
+  $N$. So mathlib is silent on exactly the characters we need, and the substitute below is
+  not a repackaging of it --- the proof is different, replacing the finite-field
+  orthogonality argument by Fourier inversion on $\Z/N$, which needs no field structure.
+\end{remark}
+
+\begin{lemma}[Fourier transform of a primitive character]
+  \label{lem:fourierTransform-primitive}
+  \lean{DirichletCharacter.IsPrimitive.fourierTransform\_eq\_inv\_mul\_gaussSum}
+  \leanok
+  For $\chi$ primitive modulo $N$ and all $k \in \Z/N$,
+  \[ \mathcal{F}\chi(k) \;=\; \chi^{-1}(-k)\, \tau(\chi). \]
+  This is in mathlib; it is stated here because the next proof uses it twice, once for
+  $\chi$ and once for $\chi^{-1}$.
+\end{lemma}
+
+\begin{theorem}[Gauss sums of $\chi$ and $\chi^{-1}$]
+  \label{thm:gaussSum-mul-inv}
+  \lean{DirichletCharacter.IsPrimitive.gaussSum\_mul\_gaussSum\_inv}
+  \leanok
+  \uses{lem:fourierTransform-primitive, lem:primitive-inv}
+  Let $\chi$ be a primitive Dirichlet character modulo $N \geq 1$ with values in $\C$.
+  Then
+  \[ \tau(\chi)\, \tau(\chi^{-1}) \;=\; \chi(-1)\, N. \]
+\end{theorem}
+\begin{proof}
+  \leanok
+  Apply the Fourier transform on $\Z/N$ twice and compare with Fourier inversion.
+
+  Lemma~\ref{lem:fourierTransform-primitive} is pointwise; by function extensionality it
+  upgrades to an identity of \emph{functions},
+  \[ \mathcal{F}\chi \;=\; \bigl( j \mapsto \chi^{-1}(-j) \bigr) \cdot \tau(\chi), \]
+  a scalar multiple of $\chi^{-1} \circ (-\,\cdot\,)$. This is the form we need, and not
+  a cosmetic restatement: the computation below rewrites $\mathcal{F}\chi$
+  \emph{underneath} a second $\mathcal{F}$, and $\mathcal{F}$ takes a function as its
+  argument, so a pointwise identity would not licence the substitution. Now transform
+  again, using linearity and equivariance under negation:
+  \begin{align*}
+    \mathcal{F}(\mathcal{F}\chi)(1)
+      &= \mathcal{F}\bigl( j \mapsto \chi^{-1}(-j) \bigr)(1) \cdot \tau(\chi)
+        && \text{\lean{ZMod.dft\_mul\_const}} \\
+      &= \mathcal{F}(\chi^{-1})(-1) \cdot \tau(\chi)
+        && \text{\lean{ZMod.dft\_comp\_neg}} \\
+      &= (\chi^{-1})^{-1}\bigl(-(-1)\bigr)\, \tau(\chi^{-1}) \cdot \tau(\chi)
+        && \text{Lemma~\ref{lem:fourierTransform-primitive} for } \chi^{-1} \\
+      &= \chi(1)\, \tau(\chi^{-1})\, \tau(\chi) \;=\; \tau(\chi)\,\tau(\chi^{-1}).
+  \end{align*}
+  The third step is legitimate because $\chi^{-1}$ is primitive, which is
+  Lemma~\ref{lem:primitive-inv}; the fourth uses $(\chi^{-1})^{-1} = \chi$,
+  $-(-1) = 1$ and $\chi(1) = 1$.
+
+  On the other hand Fourier inversion (\lean{ZMod.dft\_dft}) says
+  $\mathcal{F}(\mathcal{F}\Phi) = \bigl( j \mapsto N \cdot \Phi(-j) \bigr)$, so
+  evaluating the same quantity at $1$ gives $N\, \chi(-1)$. Equating the two computations
+  gives $\tau(\chi^{-1})\tau(\chi) = \chi(-1) N$, which is the claim after commuting the
+  product.
+\end{proof}
+
+\begin{corollary}[Gauss sums of primitive characters do not vanish]
+  \label{cor:gaussSum-ne-zero}
+  \lean{DirichletCharacter.IsPrimitive.gaussSum\_ne\_zero}
+  \leanok
+  \uses{thm:gaussSum-mul-inv}
+  For $\chi$ primitive modulo $N \geq 1$ with values in $\C$, $\tau(\chi) \neq 0$.
+\end{corollary}
+\begin{proof}
+  \leanok
+  If $\tau(\chi) = 0$ then the left side of Theorem~\ref{thm:gaussSum-mul-inv} is $0$. But
+  the right side is not: $N \neq 0$ by hypothesis, and $\chi(-1) \neq 0$ because $-1$ is a
+  unit and a multiplicative character is nonzero on units
+  (\lean{MulChar.apply\_ne\_zero\_iff}).
+\end{proof}
+
+\begin{lemma}[Gauss sum at level one]
+  \label{lem:gaussSum-modOne}
+  \lean{DirichletCharacter.gaussSum\_modOne}
+  \leanok
+  For the (unique) Dirichlet character $\chi$ modulo $1$, $\tau(\chi) = 1$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  $\Z/1$ is a singleton, so the defining sum
+  $\tau(\chi) = \sum_{a \in \Z/1} \chi(a)\, e(a)$ has one term. Name that element $1$
+  rather than $0$ --- in Lean, rewrite $\mathrm{univ}$ as $\{1\}$ using
+  \lean{Finset.singleton\_eq\_univ}, which applies since $\Z/1$ is a subsingleton. Then
+  $\chi(1) = 1$ is \lean{MulChar.map\_one} directly, and $e(1) = e(0) = 1$ is
+  \lean{AddChar.map\_zero\_eq\_one} since $1 = 0$ in $\Z/1$.
+
+  Naming the element $1$ is the whole trick: with the element named $0$ one first has to
+  prove $\chi(0) = \chi(1)$ before $\chi$ can be evaluated, because a multiplicative
+  character is defined to vanish off the units and $0$ is a unit only in the zero ring.
+
+  This is what makes the two $\zeta$ checks of Lemma~\ref{lem:gl1-numeric} blind to the
+  Gauss sum factor of the period, and hence why the $\chi_{-4}$ check of
+  Remark~\ref{rem:numeric-status} is the one worth having.
+\end{proof}
+
+\section{The archimedean Gamma factor}
+\label{sec:dirichlet-gammaFactor}
+
+Mathlib defines the archimedean Gamma factor of $\chi$ by its parity,
+\[ \gamma(\chi, s) \;=\; \begin{cases}
+     \Gamma_{\R}(s) & \chi \text{ even},\\
+     \Gamma_{\R}(s+1) & \chi \text{ odd},
+   \end{cases} \]
+(\lean{DirichletCharacter.gammaFactor}), and states the comparison with the completed
+$L$-function as $L = \Lambda/\gamma$, in that direction deliberately, so that it holds at the
+poles of $\gamma$ as well. Both facts below exist to let that comparison be read in the other
+direction, $\Lambda = L \cdot \gamma$, which is what a functional equation needs: at a pole of
+$\gamma$ the Lean statement degenerates to $L = \Lambda/0 = 0$ and carries no information
+about $\Lambda$.
+
+\begin{lemma}[The Gamma factor is inversion-invariant]
+  \label{lem:gammaFactor-inv}
+  \lean{DirichletCharacter.gammaFactor\_inv}
+  \leanok
+  \uses{lem:even-inv}
+  $\gamma(\chi^{-1}, s) = \gamma(\chi, s)$ for every $s \in \C$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  The definition of $\gamma$ depends on $\chi$ only through the truth value of
+  ``$\chi$ is even'', and $\chi^{-1}$ has the same parity as $\chi$
+  (Lemma~\ref{lem:even-inv}). So the two conditionals have the same branch condition and
+  identical branches.
+\end{proof}
+
+\begin{lemma}[The Gamma factor does not vanish at a positive integer]
+  \label{lem:gammaFactor-pos-ne-zero}
+  \lean{DirichletCharacter.gammaFactor\_natCast\_add\_one\_ne\_zero}
+  \leanok
+  For every $k \in \N$, $\gamma(\chi, k+1) \neq 0$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  In either parity the value is $\Gamma_{\R}$ evaluated at $k+1$ or at $k+2$, both of which
+  have positive real part, so \lean{Complex.Gammaℝ\_ne\_zero\_of\_re\_pos} applies. No
+  criticality hypothesis is needed, and none is available: this is a statement about an
+  arbitrary Dirichlet character.
+\end{proof}

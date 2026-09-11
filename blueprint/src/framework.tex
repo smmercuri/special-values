@@ -1,0 +1,670 @@
+\chapter{The shared framework}
+\label{chap:framework}
+
+Deligne's conjecture is a single assertion instantiated at many different classes of
+motive. This chapter isolates the data and the assertions that every instance shares,
+so that GL(1), GL(2), Hecke characters and the rest are \emph{instances} rather than
+restatements. Nothing here is specific to any one case.
+
+Mathlib has no category of motives, and we do not build one. The structure below
+abstracts exactly the six pieces of data an instance must supply, with no motivic
+content whatsoever, and characterises the expected behaviour of that data through four
+requirements.
+
+\section{The data}
+
+\begin{definition}[Deligne package]
+  \label{def:pkg}
+  \lean{Deligne.Pkg}
+  \leanok
+  Let $\Omega$ be a type, thought of as indexing a family of pure motives over $\Q$.
+  A \emph{Deligne package} on $\Omega$ is a tuple $(L, E, w, \gamma, c^{+}, \gal)$ consisting of
+  \begin{enumerate}
+    \item $L \colon \Omega \to \C \to \C$, the analytic $L$-function $L(M,s)$;
+    \item $E \colon \Omega \to \{\text{intermediate fields } \Q \subseteq E \subseteq \C\}$,
+      the value field $E(M)$;
+    \item $w \in \Z$, the common weight: the functional equation exchanges $s$ and $w+1-s$;
+    \item $\mathrm{shifts} \colon \Omega \to \operatorname{Multiset}(\Z)$, the shifts of the
+      archimedean Gamma factor, which is then
+      $\gamma(M,s) \coloneqq \prod_{a \in \mathrm{shifts}(M)} \Gamma_{\R}(s+a)$;
+    \item $c^{+} \colon \Omega \to \Z \to \C$, Deligne's period $c^{+}(M(n))$;
+    \item $\gal \colon \operatorname{Gal}(\C/\Q) \longrightarrow \operatorname{Sym}(\Omega)$,
+      a group \emph{homomorphism} into the permutations of $\Omega$, giving the action
+      $\sigma \mapsto (M \mapsto M^{\sigma})$. Here $\operatorname{Gal}(\C/\Q)$ is the group
+      of $\Q$-algebra automorphisms of $\C$, which is every field automorphism of $\C$,
+  \end{enumerate}
+  subject to four requirements:
+  \begin{enumerate}
+    \setcounter{enumi}{6}
+    \item conjugate objects have the same Hodge numbers:
+      $\mathrm{shifts}(M^{\sigma}) = \mathrm{shifts}(M)$;
+    \item the value field transports along the action:
+      $E(M^{\sigma}) = \sigma\!\left(E(M)\right)$;
+    \item the value field is algebraic: every $x \in E(M)$ is algebraic over $\Q$;
+    \item periods do not vanish at critical integers:
+      $\forall M,\ \forall n,\ \operatorname{ord}_{n}\gamma(M,\cdot) \geq 0 \wedge
+      \operatorname{ord}_{w+1-n}\gamma(M,\cdot) \geq 0 \implies c^{+}(M(n)) \neq 0$.
+  \end{enumerate}
+  In the literature the objects of $\Omega$ are motives and most of these fields are derived
+  from them; in lieu of a formal definition of a motive, the requirements record the behaviour
+  the derived data would have. In Lean, (x) is stated with criticality written out as arithmetic
+  on the shifts (Lemma~\ref{lem:prodGammaR}), because Definition~\ref{def:isCritical} is made
+  from a package and so cannot be named inside the package's own definition.
+\end{definition}
+
+\begin{definition}[Critical integers]
+  \label{def:isCritical}
+  \lean{Deligne.Pkg.IsCritical, Deligne.Pkg.gammaFactor, Deligne.Pkg.isCritical\_iff}
+  \leanok
+  \uses{def:pkg, lem:prodGammaR}
+  $n$ is \emph{critical} for $M$ when $\gamma(M,\cdot)$ has a pole at neither $n$ nor $w+1-n$ ---
+  the two points exchanged by the functional equation. ``No pole at $s$'' is
+  $\operatorname{ord}_{s}\gamma(M,\cdot) \geq 0$, the meromorphic order in mathlib's sense
+  (\lean{meromorphicOrderAt}). By Lemma~\ref{lem:prodGammaR} this is the condition that $n + a$
+  and $w + 1 - n + a$ are odd or positive for every shift $a$, which is the form an instance
+  checks it in and the form requirement (x) of Definition~\ref{def:pkg} is stated in.
+\end{definition}
+
+\begin{lemma}[$\Gamma_{\R}$ has no zeros]
+  \label{lem:GammaR-pole}
+  \lean{Complex.meromorphicOrderAt\_Gammaℝ\_add\_nonpos,
+    Complex.meromorphicOrderAt\_Gammaℝ\_add\_intCast\_nonneg\_iff}
+  \leanok
+  For $a, s \in \C$ the order of $z \mapsto \Gamma_{\R}(z+a)$ at $s$ is at most $0$: every point
+  is either a regular point or a pole. At an integer $m$, with $a \in \Z$,
+  \[ \operatorname{ord}_{m}\bigl(z \mapsto \Gamma_{\R}(z+a)\bigr) \geq 0
+     \iff m+a \text{ is odd or positive}, \]
+  since the poles of $\Gamma_{\R}$ are exactly the non-positive even integers.
+\end{lemma}
+\begin{proof}
+  \leanok
+  $1/\Gamma_{\R}$ is entire (\lean{Complex.differentiable\_Gammaℝ\_inv}), so
+  $z \mapsto \Gamma_{\R}(z+a)$ is the inverse of an entire function $g$ --- pointwise, including
+  at the poles, where both sides are $0$ because $0^{-1} = 0$ --- and its order at $s$ is
+  $-\operatorname{ord}_s g \leq 0$. That order is finite: $g$ is entire and $g(1-a) = 1$, so by
+  the identity theorem $g$ does not vanish identically near $s$. Hence the order is $-n$ for a
+  natural number $n$, and $n \neq 0$ if and only if $g(s) = 0$, i.e. if and only if
+  $\Gamma_{\R}(s+a) = 0$; at an integer that is \lean{Complex.Gammaℝ\_intCast\_eq\_zero\_iff}.
+\end{proof}
+
+\begin{lemma}[A product of $\Gamma_{\R}$'s is regular iff every factor is]
+  \label{lem:prodGammaR}
+  \lean{Complex.prodGammaℝ, Complex.meromorphicOrderAt\_prodGammaℝ\_nonpos,
+    Complex.meromorphicOrderAt\_prodGammaℝ\_nonneg\_iff,
+    Complex.meromorphicOrderAt\_prodGammaℝ\_intCast\_nonneg\_iff}
+  \leanok
+  \uses{lem:GammaR-pole}
+  Write $\gamma_{\mathrm{shifts}}(s) = \prod_{a \in \mathrm{shifts}} \Gamma_{\R}(s+a)$. Its
+  order at any point is at most $0$, and
+  \[ \operatorname{ord}_{s}\gamma_{\mathrm{shifts}} \geq 0
+     \iff \operatorname{ord}_{s}\Gamma_{\R}(\cdot + a) \geq 0 \text{ for every }
+       a \in \mathrm{shifts}. \]
+  At an integer $m$ this says that $\gamma_{\mathrm{shifts}}$ is regular exactly when $m+a$ is odd
+  or positive for every shift $a$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Induction on the multiset. The order of a product is the sum of the orders; each factor has
+  order $\leq 0$ by Lemma~\ref{lem:GammaR-pole}, and a sum of non-positive elements of
+  $\Z \cup \{\infty\}$ is $\geq 0$ exactly when both summands are. The base case is the constant
+  $1$, of order $0$.
+\end{proof}
+
+\begin{remark}[Criticality is computed, not chosen]
+  \label{rem:isCritical-derived}
+  \uses{def:isCritical, lem:prodGammaR, rem:crit-spec}
+  Deligne defines $n$ to be critical for $M$ when neither $L_{\infty}(M,s)$ nor
+  $L_{\infty}(M^{\vee},w+1-s)$ has a pole at $n$ --- criticality is not independent data, it is a
+  consequence of the archimedean factor, which is itself determined by the Hodge numbers and
+  $F_{\infty}$. Definition~\ref{def:isCritical} says exactly that, with one simplification:
+  it writes $\gamma(M,w+1-n)$ rather than $\gamma(M^{\vee},w+1-n)$, which is legitimate because
+  the package's $L$ is Deligne's and the two archimedean factors agree there --- for GL(1) by
+  Lemma~\ref{lem:gammaFactor-inv}.
+
+  Two successive versions of Definition~\ref{def:pkg} got this wrong in ways worth recording,
+  because each fix shrinks what a reader has to take on faith.
+
+  The first carried $\mathrm{IsCritical}$ as a \emph{field}: an arbitrary predicate the instance
+  supplied, constrained by nothing. A reader could only check it by reading the instance's
+  characterisation theorem and agreeing with it.
+
+  The second supplied instead a bare function $\gamma \colon \Omega \to \C \to \C$ and read ``no
+  pole at $n$'' as ``$\gamma(M,n) \neq 0$'', on the grounds that mathlib's \lean{Complex.Gamma}
+  takes the value $0$ at its poles. That went wrong twice over. The reading is \emph{false} for a
+  general function --- a zero need not be a pole, and an instance supplying $\gamma(M,s) = s-3$
+  would have the framework declare $3$ non-critical on account of an honest zero --- so the
+  critical set was still chosen by the instance, merely through a zero set rather than through a
+  predicate. And even where the reading is sound it is a paraphrase: a definition that means
+  ``no pole'' should say ``no pole''.
+
+  Definition~\ref{def:pkg} now supplies the Hodge data itself: a multiset of integer shifts,
+  from which $\gamma$ is \emph{defined} as $\prod_a \Gamma_{\R}(s+a)$. Every archimedean
+  $L$-factor has this shape --- Deligne's recipe writes $L_{\infty}(M,s)$ as a product of
+  $\Gamma_{\C}(s-p)$ over the $h^{p,q}$ with $p<q$ and of $\Gamma_{\R}(s-p)$,
+  $\Gamma_{\R}(s-p+1)$ over the $F_{\infty}$-eigenspaces on the $p=q$ part, and
+  $\Gamma_{\C}(s) = \Gamma_{\R}(s)\Gamma_{\R}(s+1)$
+  (\lean{Complex.Gammaℝ\_mul\_Gammaℝ\_add\_one}) splits each $\Gamma_{\C}$ in two. Criticality
+  is then stated as what it is: $\operatorname{ord}_{n}\gamma \geq 0$, in mathlib's
+  \lean{meromorphicOrderAt}, with no appeal to a junk-value convention at all. That the
+  condition is nevertheless \emph{checkable} is Lemma~\ref{lem:prodGammaR}, which turns it into
+  arithmetic on the shifts.
+  The residual trust is exactly the Hodge numbers, and that is what Remark~\ref{rem:crit-spec} is
+  for: for GL(1) it is Lemma~\ref{lem:gl1-crit-pkg}, checked against mathlib's own
+  \lean{DirichletCharacter.gammaFactor} by Lemma~\ref{lem:gl1-gammaFactor-pkg}.
+\end{remark}
+
+\begin{remark}[Why the weight is data, and what reflecting about $1-n$ would cost]
+  \label{rem:weight}
+  \uses{def:pkg, def:isCritical}
+  Deligne's functional equation for a motive of weight $w$ exchanges $s$ and $w+1-s$, and
+  Definition~\ref{def:isCritical} reflects about that point. An earlier version hard-coded
+  $1-n$, i.e. $w = 0$. That is correct for GL(1), whose Artin motives all have weight $0$, and it
+  is wrong --- silently, and in the direction that makes the conjecture say nothing --- for every
+  odd-weight motive.
+
+  Take $M = H^{1}(E)$ for an elliptic curve: $\gamma(s) = \Gamma_{\C}(s)$, with poles at
+  $s \in \Z_{\leq 0}$, and $w = 1$. The correct condition --- $\gamma$ regular at $n$ and at
+  $2-n$ --- gives $n \geq 1$ and $n \leq 1$, the single critical point $s=1$. Reflecting about
+  $1-n$ instead gives $n \geq 1$ and $n \leq 0$: empty. The instance would then land in
+  Theorem~\ref{thm:vacuous-conjecture} and Deligne's conjecture would be vacuously true for every
+  elliptic curve.
+
+  Nor can this be absorbed into the normalisation of $L$. Recentring the functional equation on
+  $1/2$ costs a shift by $w/2$: for even $w$ that is an integer and harmless, but for odd $w$ it
+  moves the critical points into $\Z + \tfrac12$, where an integer $n$ cannot see them, and moves
+  the Gamma shifts out of $\Z$ with them. For a weight-$k$ modular form, whose motive has weight
+  $k-1$, the hard-coded version covers odd $k$ and excludes every even $k$ --- elliptic curves
+  among them. Carrying $w$ as data costs GL(1) one field set to $0$ and keeps
+  Definition~\ref{def:pkg} usable for GL(2).
+
+  The weight belongs to the package rather than to the object: it is a \emph{common} weight,
+  which is what makes $M_1 \oplus M_2$ pure and Definition~\ref{def:sum} meaningful. A collection
+  whose members have different weights is split into one package per weight.
+\end{remark}
+
+\begin{remark}[Why (x) is part of the definition, and why nondegeneracy is not]
+  \label{rem:not-a-pkg}
+  \uses{def:pkg, def:hasCriticalInteger}
+  Requirement (x) is not a side condition bolted on afterwards. Without it the package with
+  $c^{+} \coloneqq 0$ has $\widetilde{L}_F \equiv 0$, since $x/0 = 0$ in Lean, so both halves
+  of Definition~\ref{def:conjecture} hold for free --- $0$ lies in every subfield of $\C$ and
+  is fixed by every $\sigma$. Deligne's $c^{+}$ is a determinant of a period matrix and is
+  nonzero by construction, so (x) costs a genuine instance nothing, and making it part of the
+  definition means the degenerate case cannot be written down at all.
+
+  An earlier version of this definition had a second requirement of the same apparent kind:
+  that every object have a critical integer, ruling out $\mathrm{IsCritical} \coloneqq \bot$,
+  which likewise satisfies Definition~\ref{def:conjecture} vacuously. That requirement has been
+  removed, and the reason is worth recording because it is not a matter of taste. It conflates
+  two situations that the shape of the critical set cannot distinguish: an instantiation that
+  \emph{dodges} the question by declaring nothing critical, and an object whose
+  $\mathrm{IsCritical}$ is \emph{correct} and happens to be empty. The second is not
+  pathological --- $h^{0}(\operatorname{Spec} K)$ for $K$ not totally real is such an object,
+  and Deligne's conjecture is meaningfully and vacuously true for it
+  (Theorem~\ref{thm:vacuous-conjecture}) --- and as a clause of Definition~\ref{def:pkg} the
+  requirement made those motives inexpressible. What actually separates the two cases is whether
+  $\mathrm{IsCritical}$ is the \emph{right} predicate, and that is already the job of the
+  characterisation obligation of Remark~\ref{rem:crit-spec}, which is strictly stronger: it also
+  catches a critical set that is wrong and nonempty, which a nonemptiness clause sails past.
+  Nondegeneracy is therefore now Definition~\ref{def:hasCriticalInteger}, a predicate discharged
+  per instance. It was direct sums (\S\ref{sec:direct-sums}) that forced the issue: the
+  requirement is not preserved by $\oplus$.
+\end{remark}
+
+\begin{remark}[Why the value field is bounded]
+  \label{rem:valueField-bounded}
+  \uses{def:pkg, def:algebraicity}
+  The value field raises the same question as requirement (x), for the other half of the data.
+  Definition~\ref{def:algebraicity} asserts a \emph{membership},
+  $\widetilde{L}_{F}(M,n) \in E(M)$, and $E$ is supplied by the instance. Taking
+  $E \coloneqq \C$ would make that membership hold for every $L$ and every $c^{+}$, so the
+  algebraicity half of Deligne's conjecture would assert nothing at all --- and, unlike a
+  vanishing period, a too-large value field is not detectable from the shape of the data: $\C$
+  is as much a subfield of $\C$ as $\Q$ is.
+
+  Requirement (ix) is the bound: $E(M)$ consists of algebraic numbers, so the largest field an
+  instance may name is $\Qbar$ and not $\C$. There Definition~\ref{def:algebraicity} reads
+  ``the normalised critical values are algebraic''. That is a weak statement, but it is a
+  statement, which is Theorem~\ref{thm:arithmetic-algebraic}.
+
+  It is weaker than the truth. Deligne's $E(M)$ is a \emph{number field}, finite over $\Q$, and
+  requiring finiteness would be the sharp form of the bound; Definition~\ref{def:sum} would
+  survive it, a compositum of number fields being a number field. It is not imposed because
+  neither instance's statement uses it, and each would then owe a finiteness proof --- for
+  GL(1), that $\Q(\chi)$ is finite over $\Q$ --- that buys nothing. What the bound exists for
+  is already bought: $E$ can no longer be chosen to make the conjecture true.
+
+  Like requirement (x) and unlike nondegeneracy, the bound passes both tests of
+  Remark~\ref{rem:not-a-pkg}. It survives $\oplus$, a compositum of algebraic subfields
+  being one; and it excludes no legitimate object, since every motive has a number field for its
+  coefficients.
+\end{remark}
+
+\begin{theorem}[Algebraicity always asserts algebraicity]
+  \label{thm:arithmetic-algebraic}
+  \lean{Deligne.Pkg.IsArithmetic.isAlgebraic}
+  \leanok
+  \uses{def:algebraicity, def:pkg}
+  If $F$ satisfies algebraicity at $M$ then $\widetilde{L}_{F}(M,n)$ is algebraic over $\Q$ at
+  every critical $n$, whatever $E$ the package supplies.
+\end{theorem}
+\begin{proof}
+  \leanok
+  $\widetilde{L}_{F}(M,n) \in E(M)$, and $E(M)$ is algebraic by requirement (ix) of
+  Definition~\ref{def:pkg}.
+\end{proof}
+
+Two remarks on the shape of this definition, both of which are forced by how the
+instances actually want to use it.
+
+\begin{remark}
+  $L$ takes a complex argument rather than an integer one. An instance plugs in its
+  genuine analytic $L$-function, and the restriction to integer points happens here,
+  once. This matters: the proof in every case we know of runs through the functional
+  equation, which is a statement about $L$ on all of $\C$.
+\end{remark}
+
+\begin{remark}
+  The Galois action is a field of the structure rather than a \lean{MulAction}
+  instance. An instance almost always wants to \emph{define} its action explicitly
+  (for GL(1), $\chi \mapsto \sigma \circ \chi$) rather than to have it found by
+  typeclass synthesis, and the action is not canonical in $\Omega$. It is nonetheless a genuine
+  action, carried as a monoid homomorphism
+  $\operatorname{Gal}(\C/\Q) \to \operatorname{Sym}(\Omega)$ rather than as a bare function together
+  with two laws: the compressed form is what mathlib prefers, and it makes $\gal(\sigma)$
+  invertible by construction, with inverse $\gal(\sigma^{-1})$, rather than by a derivation.
+\end{remark}
+
+\section{The assertions}
+\label{sec:assertions}
+
+\begin{definition}[Normalised critical value]
+  \label{def:normalizedValue}
+  \lean{Deligne.Pkg.normalizedValue}
+  \leanok
+  \uses{def:pkg}
+  For a Deligne package $F$, an object $M$ and $n \in \Z$, set
+  \[ \widetilde{L}_F(M,n) \;=\; \frac{L(M,n)}{c^{+}(M(n))}. \]
+\end{definition}
+
+\begin{definition}[Algebraicity]
+  \label{def:algebraicity}
+  \lean{Deligne.Pkg.IsArithmetic}
+  \leanok
+  \uses{def:normalizedValue}
+  $F$ satisfies \emph{algebraicity} at $M$ if for every critical $n$,
+  $\widetilde{L}_F(M,n) \in E(M)$.
+\end{definition}
+
+\begin{definition}[Galois equivariance]
+  \label{def:equivariance}
+  \lean{Deligne.Pkg.IsEquivariant}
+  \leanok
+  \uses{def:normalizedValue}
+  $F$ satisfies \emph{equivariance} at $M$ if for every $\sigma \in \operatorname{Gal}(\C/\Q)$
+  and every critical $n$,
+  \[ \sigma\!\left(\widetilde{L}_F(M,n)\right) \;=\; \widetilde{L}_F(M^{\sigma},n). \]
+\end{definition}
+
+Equivariance is the sharp form. It is strictly more information than algebraicity,
+and it is the half that pins down the period normalisation: a period that is off by a
+transcendental factor can still satisfy a naive algebraicity statement, but it cannot
+satisfy equivariance.
+
+\begin{definition}[Deligne's conjecture for a package]
+  \label{def:conjecture}
+  \lean{Deligne.Pkg.Conjecture}
+  \leanok
+  \uses{def:algebraicity, def:equivariance}
+  $F$ satisfies \emph{Deligne's conjecture} at $M$ if it satisfies both algebraicity and
+  equivariance at $M$.
+\end{definition}
+
+\begin{lemma}[Rational values are automatically equivariant]
+  \label{lem:rational-equivariant}
+  \lean{Deligne.Pkg.IsArithmetic.isEquivariant\_of\_valueField\_eq\_bot,
+    IntermediateField.apply\_eq\_self\_of\_mem\_bot}
+  \leanok
+  \uses{def:algebraicity, def:equivariance}
+  Let $M$ be an object with $E(M) = \Q$ and $M^{\sigma} = M$ for every
+  $\sigma \in \operatorname{Gal}(\C/\Q)$. Then algebraicity at $M$ implies equivariance at $M$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  A $\Q$-algebra endomorphism of $\C$ fixes the bottom intermediate field $\Q$ pointwise, so
+  $\sigma$ fixes $\widetilde{L}_{F}(M,n)$, which lies in $\Q$ by algebraicity; and
+  $M^{\sigma}=M$ makes the right-hand side of equivariance the same number.
+\end{proof}
+
+This is not a weakening of Section~\ref{sec:assertions}'s claim that equivariance is strictly
+more information than algebraicity. It says only that the gap between them closes when the
+value field is $\Q$ \emph{and} the object is Galois-fixed, which is exactly the situation
+of a motive over $\Q$ with rational coefficients; for an object with a larger $E(M)$, or one the
+action moves, equivariance still carries the extra content.
+
+\section{The period and the \texorpdfstring{$L$}{L}-function}
+\label{sec:no-L-field}
+
+\begin{theorem}[The period may not be the $L$-value]
+  \label{thm:period-eq-vacuous}
+  \lean{Deligne.Pkg.conjecture\_of\_period\_eq\_mul\_L, Deligne.Pkg.conjecture\_of\_L\_eq\_zero}
+  \leanok
+  \uses{def:conjecture, lem:isCritical-galois}
+  Let $F$ be a Deligne package, $M$ an object and $e \colon \Z \to E(M)$.
+  If $c^{+}(M^{\sigma}(n)) = \sigma(e(n))\,L(M^{\sigma},n)$ for every
+  $\sigma \in \operatorname{Gal}(\C/\Q)$ and every critical $n$ --- that is, if on the Galois
+  orbit of $M$ the period is a rescaling of the $L$-value by an element of the value field ---
+  then $F$ satisfies Deligne's conjecture at $M$. Likewise if $L(M^{\sigma},n) = 0$ for every
+  $\sigma$ and every critical $n$.
+\end{theorem}
+\begin{proof}
+  \leanok
+  At a critical $n$ the period does not vanish (requirement (x) of Definition~\ref{def:pkg}),
+  so neither does $L(M^{\sigma},n)$, and $\widetilde{L}_{F}(M^{\sigma},n) = \sigma(e(n))^{-1}$;
+  Lemma~\ref{lem:isCritical-galois} supplies criticality at $M^{\sigma}$. At $\sigma = 1$ this
+  lies in $E(M)$, and $\sigma$ carries $e(n)^{-1}$ to $\sigma(e(n))^{-1}$, which is equivariance.
+  For a vanishing $L$-function the normalised value is $0$ on the orbit, which lies in every
+  field and is fixed by every $\sigma$.
+\end{proof}
+
+Theorem~\ref{thm:period-eq-vacuous} is the one degenerate shape that no requirement of
+Definition~\ref{def:pkg} can exclude. An instance defines all its fields at once, so $c^{+}$ may
+be written in terms of $L$, and no requirement stated \emph{within} the structure can detect
+that it was. It is worth being precise about what the requirements do and do not do.
+Requirement (x) forbids a period that \emph{vanishes}; it says nothing about where a nonvanishing
+period came from. Uniqueness would not help either: a predicate ``$x$ is the period of $M(n)$''
+defined as $x = L(M,n)$ is trivially satisfied by exactly one $x$.
+
+An earlier version of Definition~\ref{def:pkg} removed $L$ from the data for this reason, so
+that an instance asserted its conjecture in the form
+$\forall L,\ (\text{$L$ is the $L$-function of $M$}) \implies F.\mathrm{Conjecture}(L,M)$,
+with the period fixed before $L$ was quantified. That made the independence of $c^{+}$ from $L$
+a fact about the types. It has been given up in favour of carrying $L$ as a field, because the
+package should be the complete data of the conjecture and because nothing formal prevents an
+author from writing $F$ and $L$ in the same file with the same number in mind in either shape.
+What remains is a reading obligation: a reader of an instance checks that its period does not
+mention its $L$-function. For GL(1) the period is a Gauss sum times a power of $2\pi i$
+(Definition~\ref{def:gl1-period}) and the $L$-function is mathlib's; for
+Chapter~\ref{chap:sympow} the period is a function of a period lattice and of nothing else
+(Definition~\ref{def:periodpair-periods}), and the $L$-function is quantified over outside the
+package (Definition~\ref{def:sympow-conjecture}).
+
+\section{Guarding against vacuous instances}
+\label{sec:guards}
+
+The framework of \S\ref{def:pkg} buys reuse at a price that must be paid
+explicitly. Requirements (ix) and (x) of Definition~\ref{def:pkg} rule out a vanishing period
+and a value field too big to say anything, but nothing in the definition rules out an
+instance whose $\mathrm{IsCritical}$ is
+honest-looking and still wrong. A reader cannot tell, from the fact that \lean{Conjecture}
+has been proved, whether the critical set it was proved for is the right one.
+
+We therefore require every instance in this development to discharge two further
+obligations alongside its main theorem. These are not part of the statement of
+Deligne's conjecture; they are what makes an instantiation of it trustworthy.
+
+\begin{definition}[Nondegeneracy]
+  \label{def:hasCriticalInteger}
+  \lean{Deligne.Pkg.HasCriticalInteger}
+  \leanok
+  \uses{def:pkg}
+  An object $M$ is \emph{nondegenerate} if it has at least one critical integer.
+\end{definition}
+
+\begin{theorem}[The degenerate case is vacuously true]
+  \label{thm:vacuous-conjecture}
+  \lean{Deligne.Pkg.Conjecture.of\_not\_hasCriticalInteger,
+    Deligne.Pkg.conjecture\_of\_forall\_not\_isCritical}
+  \leanok
+  \uses{def:hasCriticalInteger, def:conjecture}
+  If $M$ has no critical integer then $F$ satisfies Deligne's conjecture at $M$.
+\end{theorem}
+\begin{proof}
+  \leanok
+  Both halves of Definition~\ref{def:conjecture} quantify over critical integers, so both
+  are vacuously true. This is the content of Remark~\ref{rem:not-a-pkg}'s second
+  paragraph: the statement is not a loophole but a theorem, and the objects it applies to are
+  real. $\zeta_K$ for $K$ with a complex place is one, and its emptiness is itself a theorem
+  --- the archimedean factor acquires a $\Gamma_{\C}$, whose poles at $s \leq 0$ and whose
+  reflected poles at $s \geq 1$ between them exclude every integer.
+\end{proof}
+
+\begin{lemma}[Criticality is Galois-stable]
+  \label{lem:isCritical-galois}
+  \lean{Deligne.Pkg.isCritical\_galoisAction\_iff}
+  \leanok
+  \uses{def:pkg, def:isCritical}
+  For every $\sigma \in \operatorname{Gal}(\C/\Q)$,
+  $\mathrm{IsCritical}(M^{\sigma},n) \iff \mathrm{IsCritical}(M,n)$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Criticality depends on $M$ only through $\mathrm{shifts}(M)$ (Definition~\ref{def:isCritical}),
+  and requirement (vii) says $\mathrm{shifts}(M^{\sigma}) = \mathrm{shifts}(M)$.
+\end{proof}
+
+\emph{Coherence} --- this lemma together with the transport $E(M^{\sigma}) = \sigma(E(M))$ of the
+value field --- was once an obligation each instance discharged separately. Requirements (vii)
+and (viii) of Definition~\ref{def:pkg} absorb it: what an instance now proves, in proving those
+two requirements, is exactly what it used to prove afterwards.
+
+\begin{remark}[The second obligation]
+  \label{rem:crit-spec}
+  Nondegeneracy is a property stated within the framework. The second obligation
+  cannot be: each instance must prove a \emph{characterisation}
+  theorem identifying its $\mathrm{IsCritical}$ predicate with an independently and
+  concretely specified condition, stated without reference to the framework. For
+  GL(1) this is Lemma~\ref{lem:gl1-crit-spec}, and it is checked against
+  $\zeta$ in Remark~\ref{rem:zeta-sanity}. An instance that proves
+  \lean{Conjecture} but omits its characterisation theorem has
+  not been shown to be about anything.
+\end{remark}
+
+\section{Direct sums}
+\label{sec:direct-sums}
+
+A framework that could not express the direct sum of two motives would be of no use beyond
+its first instance: every Artin motive of rank $>1$ over $\Q$ is a sum of smaller ones, and
+$\zeta_K$ is the standard example. This section carries out that construction. It is also what
+diagnosed the shape of Definition~\ref{def:pkg}: in an earlier version, nondegeneracy was a
+clause of that definition and the construction below could not be carried out without an extra
+hypothesis. Nondegeneracy is now Definition~\ref{def:hasCriticalInteger}, the sum is total, and
+what remains to record is one genuine limitation that $\oplus$ exposes and the design change does
+not remove.
+
+\begin{definition}[Direct sum of packages]
+  \label{def:sum}
+  \lean{Deligne.Pkg.sum}
+  \leanok
+  \uses{def:pkg}
+  Let $F_1$ on $\Omega_1$ and $F_2$ on $\Omega_2$ be Deligne packages \emph{of the same weight},
+  $w_1 = w_2$. Then $F_1 \oplus F_2$ is the package on $\Omega_1 \times \Omega_2$ of weight $w_1$
+  with
+  \[ L = L_1 L_2, \qquad \mathrm{shifts} = \mathrm{shifts}_1 + \mathrm{shifts}_2, \qquad
+     E = E_1 E_2, \qquad c^{+} = c^{+}_1 c^{+}_2, \]
+  and the componentwise Galois action. The multiset sum of the shifts is the product
+  $\gamma = \gamma_1 \gamma_2$ of the archimedean factors. Equality of the weights is not a
+  technicality: the functional equation of $\Lambda_1 \Lambda_2$ exchanges $s$ and $w+1-s$ only
+  when the two factors reflect about the same point, which is the statement that
+  $M_1 \oplus M_2$ is pure.
+\end{definition}
+\begin{proof}
+  \leanok
+  Each clause is the motivic fact: $L$-functions and Deligne periods are multiplicative on
+  direct sums (the period because the comparison isomorphism is block diagonal, so its
+  determinant is the product); the value field of a sum is the compositum; and the
+  archimedean factor of a sum is the product of the factors. Of the requirements of
+  Definition~\ref{def:pkg}, (vii) and (viii) hold componentwise, (viii) because $\sigma_{*}$ on subfields
+  is a left adjoint (to $\sigma^{*}$) and therefore preserves joins, which is mathlib's
+  \lean{IntermediateField.map\_sup}; (ix) because a compositum of algebraic intermediate fields
+  lies in $\Qbar$;
+  and (x) because a product of nonzero periods is nonzero.
+
+  Criticality is no longer among the choices: it is computed from $\gamma$, and since a product is
+  nonzero exactly when both factors are, $n$ is critical for $M_1 \oplus M_2$ if and only if it is
+  critical for each summand. What used to be a definitional decision is
+  Lemma~\ref{lem:isCritical-sum}.
+\end{proof}
+
+\begin{remark}[Nondegeneracy is not inherited, and that is now harmless]
+  \label{rem:sum-obstruction}
+  \uses{def:sum, def:hasCriticalInteger}
+  Definition~\ref{def:hasCriticalInteger} is \emph{not} preserved by $\oplus$: two motives may
+  each have critical integers and yet share none, so $M_1$ and $M_2$ may both be nondegenerate
+  while $M_1 \oplus M_2$ is not. In the GL(1) case this is exactly a parity condition
+  (Lemma~\ref{lem:gl1-common-critical}), and it fails for the pair $(\mathbf{1}, \chi)$ with
+  $\chi$ odd. That pair is not a curiosity: its sum is $h^{0}(\operatorname{Spec} K)$ for
+  $K$ imaginary quadratic, whose $L$-function is
+  $\zeta_K = \zeta \cdot L(\chi_{-d}, \cdot)$ --- and $\zeta_K$ genuinely has no critical
+  integers, because the archimedean factor acquires a $\Gamma_{\C}$, whose poles at $s \leq 0$
+  and whose reflected poles at $s \geq 1$ between them exclude every integer.
+
+  With nondegeneracy a predicate rather than a clause, none of this obstructs anything.
+  $F_1 \oplus F_2$ is a Deligne package regardless; $h^{0}(\operatorname{Spec} K)$ is an object
+  of it; and Deligne's conjecture holds there by Theorem~\ref{thm:vacuous-conjecture} rather than
+  being unstatable. What is lost is only that an instance built from a sum must prove
+  nondegeneracy for itself when it wants it, which is the correct state of affairs: for
+  $h^{0}(\operatorname{Spec} K)$ the honest theorem is that nondegeneracy \emph{fails} unless
+  $K$ is totally real.
+
+  A second limitation surfaces in the same construction and is worth separating from the first.
+  Definition~\ref{def:pkg} makes the value field a \emph{field}
+  (\lean{IntermediateField} $\Q\ \C$), but the value object of a direct sum is properly the
+  \emph{ring} $E_1 \times E_2$: Deligne's conjecture for $M_1 \oplus M_2$ is really the pair of
+  conjectures, one over each factor. Definition~\ref{def:sum} uses the compositum $E_1 E_2$
+  instead, which is correct but lossy --- $L_1L_2/(c_1^{+}c_2^{+}) \in E_1E_2$ is implied by,
+  and strictly weaker than, $L_1/c_1^{+} \in E_1$ together with $L_2/c_2^{+} \in E_2$. So
+  Theorem~\ref{thm:conjecture-sum} concludes something weaker than what it consumes. Nothing is
+  wrong with it; but a framework that intends to reach beyond a single instance should know that
+  the field is a constraint. Unlike the nondegeneracy clause, this one has not been removed:
+  restating the conjecture over a value \emph{ring} would touch every definition in
+  \S\ref{sec:assertions}, and every instance in sight has an honest field.
+\end{remark}
+
+\begin{lemma}[Criticality for a direct sum]
+  \label{lem:isCritical-sum}
+  \lean{Deligne.Pkg.isCritical\_sum\_iff, Deligne.Pkg.gammaFactor\_sum}
+  \leanok
+  \uses{def:sum, def:isCritical}
+  $n$ is critical for $M_1 \oplus M_2$ if and only if it is critical for $M_1$ and for $M_2$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  The shifts of the sum are the multiset union of the shifts, so by
+  Lemma~\ref{lem:prodGammaR} the sum is regular at a point exactly when both summands are; apply
+  this at $n$ and at $w+1-n$, which is the same point for both summands because the weights
+  agree.
+\end{proof}
+
+\begin{lemma}[Normalised values multiply]
+  \label{lem:normalizedValue-sum}
+  \lean{Deligne.Pkg.normalizedValue\_sum, Deligne.Pkg.galoisAction\_sum}
+  \leanok
+  \uses{def:sum, def:normalizedValue}
+  The normalised value of $F_1 \oplus F_2$ at $(M_1, M_2)$ and $n$ is the product of the
+  normalised values of $M_1$ and $M_2$ at $n$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Both the $L$-value and the period are products, and $(ac)/(bd) = (a/b)(c/d)$.
+\end{proof}
+
+\begin{theorem}[Deligne's conjecture is inherited by direct sums]
+  \label{thm:conjecture-sum}
+  \lean{Deligne.Pkg.Conjecture.sum, Deligne.Pkg.IsArithmetic.sum,
+    Deligne.Pkg.IsEquivariant.sum}
+  \leanok
+  \uses{def:sum, lem:normalizedValue-sum, def:conjecture, def:algebraicity, def:equivariance}
+  If $F_1$ satisfies the conjecture at $M_1$ and $F_2$ at $M_2$, then $F_1 \oplus F_2$
+  satisfies it at $(M_1, M_2)$.
+\end{theorem}
+\begin{proof}
+  \leanok
+  \uses{lem:normalizedValue-sum}
+  A critical integer for the sum is critical for each summand, so
+  Lemma~\ref{lem:normalizedValue-sum} writes the normalised value as a product of two values
+  known to lie in $E_1$ and $E_2$ respectively; both lie in the compositum, and so does the
+  product. For equivariance, $\sigma$ is multiplicative and each factor transports by
+  hypothesis. The one Lean wrinkle is that the transported object
+  $\sigma \cdot (M_1,M_2)$ is only \emph{definitionally} the pair
+  $(\sigma \cdot M_1, \sigma \cdot M_2)$, so Lemma~\ref{lem:normalizedValue-sum} has to be
+  instantiated at it by hand rather than rewritten with.
+\end{proof}
+
+\section{Galois descent}
+\label{sec:descent}
+
+Section~\ref{sec:direct-sums} produces, for a sum of two motives, the weakest true statement:
+$\widetilde{L} \in E_1E_2$. The statement one actually wants for $\zeta_K$ is $\widetilde{L} \in
+\Q$, which is strictly stronger --- $\Q$ is the smaller field --- and it is not a formal
+consequence of the two summand statements. It follows instead from \emph{equivariance}, which up
+to this point in the development has been proved and then used for nothing.
+
+\begin{theorem}[Descent]
+  \label{thm:descent}
+  \lean{Deligne.Pkg.map\_prod\_normalizedValue}
+  \leanok
+  \uses{def:equivariance, def:normalizedValue}
+  Let $(M_i)_{i \in I}$ be a finite family of objects, $n$ critical for each $M_i$, and suppose
+  each $M_i$ satisfies equivariance. If $\sigma \in \operatorname{Gal}(\C/\Q)$ permutes the family
+  --- that is, there is a permutation $e$ of $I$ with $M_i^{\sigma} = M_{e(i)}$ --- then
+  \[ \sigma\Bigl(\prod_{i \in I} \widetilde{L}_F(M_i, n)\Bigr)
+     = \prod_{i \in I} \widetilde{L}_F(M_i, n). \]
+\end{theorem}
+\begin{proof}
+  \leanok
+  Apply $\sigma$ termwise. Equivariance turns $\sigma(\widetilde{L}_F(M_i,n))$ into
+  $\widetilde{L}_F(M_i^{\sigma},n) = \widetilde{L}_F(M_{e(i)},n)$, and reindexing along the
+  permutation $e$ returns the original product.
+\end{proof}
+
+\begin{lemma}[The product lies in the compositum]
+  \label{lem:prod-mem-compositum}
+  \lean{Deligne.Pkg.prod\_normalizedValue\_mem\_iSup}
+  \leanok
+  \uses{def:algebraicity}
+  Under the same hypotheses with algebraicity in place of equivariance,
+  $\prod_i \widetilde{L}_F(M_i,n)$ lies in the compositum $\bigvee_i E(M_i)$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Each factor lies in its own value field, hence in the join, and a subfield is closed
+  under products.
+\end{proof}
+
+\begin{remark}[Where this stops, and why]
+  \label{rem:descent-gap}
+  \uses{thm:descent}
+  The fixed field of $\operatorname{Gal}(\C/\Q)$ is $\Q$: an automorphism fixes $\Q$ pointwise,
+  and every irrational --- algebraic or transcendental --- is moved by some automorphism. So
+  Theorem~\ref{thm:descent} says the product is \emph{rational}, and that is the Klingen--Siegel
+  shape: for $K$ abelian and totally real, $\zeta_K = \prod_{\chi \in X} L(\chi, \cdot)$ over a
+  Galois-stable set $X$ of even characters, each factor lies in $\Q(\chi)$, and the product lies
+  in $\Q$ --- which does not follow from the factors alone.
+
+  That last step is not formalised, and the two things missing are both absent from mathlib, not
+  from this development. First, mathlib has no statement that the fixed field of
+  $\operatorname{Gal}(\C/\Q)$ is $\Q$, so Theorem~\ref{thm:descent} stops at the invariance equation.
+  Second, mathlib has no \lean{Fintype} instance for Dirichlet characters, so GL(1) has no
+  \emph{nontrivial} Galois-stable family to instantiate the theorem at. A trivial one does exist,
+  and it is worth saying so: any Galois-fixed object gives a Galois-stable singleton, and the
+  level-one character is fixed (\lean{MulChar.ringHomComp\_one}), so the hypotheses are
+  satisfiable. What is unavailable is a family about which the theorem says something new. Both
+  gaps are stated precisely so a later pass can check whether they have closed rather than
+  rediscover the obstruction.
+
+  The hypothesis of Theorem~\ref{thm:descent} still hands over a permutation of the index rather
+  than deriving one, and that is now a convenience rather than a necessity: since $\gal$ is a
+  group action, $\gal(\sigma)$ is a bijection with inverse $\gal(\sigma^{-1})$, so a family
+  stable under it and indexed injectively determines the permutation. Deriving it needs the
+  injectivity of the indexing together with a counting argument, and is left until a caller wants
+  the weaker hypothesis. The value field of Remark~\ref{rem:sum-obstruction} remains the one
+  limitation of Definition~\ref{def:pkg} that a second instance should be expected to press
+  on.
+
+  Two consistency checks, from a direction independent of the $\Gamma$-factor computation. For $K$
+  abelian and totally real every $\chi \in X$ is even, so by Lemma~\ref{lem:gl1-common-critical}
+  the critical sets coincide and the product is nondegenerate. For $K$ with a complex place $X$
+  contains an odd character, the critical sets are disjoint, and there is no critical $n$ at all
+  --- matching Remark~\ref{rem:sum-obstruction}.
+\end{remark}

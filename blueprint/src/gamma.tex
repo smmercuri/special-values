@@ -1,0 +1,163 @@
+\chapter{Deligne's archimedean Gamma factors}
+\label{chap:gamma}
+
+This chapter collects the facts about the archimedean Gamma factors
+\[ \Gamma_{\R}(s) = \pi^{-s/2}\,\Gamma(s/2), \qquad
+   \Gamma_{\C}(s) = 2\,(2\pi)^{-s}\,\Gamma(s) \]
+(\lean{Complex.Gammaℝ}, \lean{Complex.Gammaℂ}) that the GL(1) case needs and that mathlib
+does not record. As with Chapter~\ref{chap:dirichlet}, nothing here mentions Deligne's
+conjecture and all of it belongs upstream.
+
+Mathlib already has the two reflection formulae in the shape
+$\Gamma_{\R}(1-s)^{-1} = \dots$ and $\Gamma_{\R}(2-s)^{-1} = \dots$, which is the shape in
+which they are \emph{derived}. A functional equation, however, compares $\Lambda(1-s)$ with
+$\Lambda(s)$, so what occurs in practice is the \emph{quotient} of the two Gamma factors, not
+the inverse of either. Turning one into the other needs the non-vanishing of the denominator,
+which is exactly what the hypothesis $s \notin -\N$ supplies. That is the whole content of
+\S\ref{sec:gamma-reflection}.
+
+\section{Vanishing}
+\label{sec:gamma-vanishing}
+
+\begin{lemma}[Where $\Gamma_{\R}$ vanishes at an integer]
+  \label{lem:gammaR-intCast-zero}
+  \lean{Complex.Gammaℝ\_intCast\_eq\_zero\_iff}
+  \leanok
+  For $m \in \Z$, $\Gamma_{\R}(m) = 0$ if and only if $m \leq 0$ and $m$ is even.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Mathlib's \lean{Complex.Gammaℝ\_eq\_zero\_iff} says $\Gamma_{\R}(s) = 0$ exactly when
+  $s = -2j$ for some $j \in \N$; at an integer argument the existential is eliminated by
+  comparing in $\Z$, where $\Z \to \C$ is injective. Since \lean{Complex.Gamma} takes the value
+  $0$ at its poles, this identifies which integers are poles of $\Gamma_{\R}$, and it is what
+  Lemma~\ref{lem:gl1-crit-pkg} computes the critical set from.
+\end{proof}
+
+\begin{lemma}[Non-vanishing at odd integers]
+  \label{lem:gammaR-odd-ne-zero}
+  \lean{Complex.Gammaℝ\_intCast\_ne\_zero\_of\_odd}
+  \leanok
+  \uses{lem:gammaR-intCast-zero}
+  If $m \in \Z$ is odd then $\Gamma_{\R}(m) \neq 0$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Immediate from Lemma~\ref{lem:gammaR-intCast-zero}: an odd integer is not even.
+\end{proof}
+
+\section{Reflection, as a quotient}
+\label{sec:gamma-reflection}
+
+\begin{lemma}[Reflection for an even functional equation]
+  \label{lem:gammaR-refl-even}
+  \lean{Complex.Gammaℝ\_one\_sub\_div\_Gammaℝ}
+  \leanok
+  Let $s \in \C$ with $s \neq -n$ for every $n \in \N$. Then
+  \[ \frac{\Gamma_{\R}(1-s)}{\Gamma_{\R}(s)} \;=\;
+     \bigl(\Gamma_{\C}(s)\,\cos(\pi s/2)\bigr)^{-1}. \]
+\end{lemma}
+\begin{proof}
+  \leanok
+  Mathlib's \lean{Complex.inv\_Gammaℝ\_one\_sub} states
+  $\Gamma_{\R}(1-s)^{-1} = \Gamma_{\C}(s)\cos(\pi s/2)\,\Gamma_{\R}(s)^{-1}$ under the same
+  hypothesis. Inverting both sides and distributing the inverse over the product gives
+  $\Gamma_{\R}(1-s) = (\Gamma_{\C}(s)\cos(\pi s/2))^{-1}\,\Gamma_{\R}(s)$, and dividing by
+  $\Gamma_{\R}(s)$ gives the claim. The division is legitimate:
+  $\Gamma_{\R}(s) \neq 0$, since a zero would force $s = -2n$ for some $n \in \N$
+  (Lemma~\ref{lem:gammaR-odd-ne-zero}'s criterion), which the hypothesis excludes at $n' = 2n$.
+\end{proof}
+
+\begin{lemma}[Reflection for an odd functional equation]
+  \label{lem:gammaR-refl-odd}
+  \lean{Complex.Gammaℝ\_two\_sub\_div\_Gammaℝ\_add\_one}
+  \leanok
+  Let $s \in \C$ with $s \neq -n$ for every $n \in \N$. Then
+  \[ \frac{\Gamma_{\R}(2-s)}{\Gamma_{\R}(s+1)} \;=\;
+     \bigl(\Gamma_{\C}(s)\,\sin(\pi s/2)\bigr)^{-1}. \]
+\end{lemma}
+\begin{proof}
+  \leanok
+  Identical to Lemma~\ref{lem:gammaR-refl-even}, starting from
+  \lean{Complex.inv\_Gammaℝ\_two\_sub} instead. Here the denominator to be cleared is
+  $\Gamma_{\R}(s+1)$, which is nonzero because $\Gamma_{\R}(s+1) = 0$ would force
+  $s = -(2n+1)$, again excluded by the hypothesis.
+\end{proof}
+
+\section{Values at integer points}
+\label{sec:gamma-values}
+
+\begin{lemma}[Cosine at an integer multiple of $\pi$]
+  \label{lem:cos-natCast-mul-pi}
+  \lean{Complex.cos\_natCast\_mul\_pi}
+  \leanok
+  For every $m \in \N$, $\cos(m\pi) = (-1)^{m}$, as an identity in $\C$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Mathlib has this over $\R$ (\lean{Real.cos\_nat\_mul\_pi}, a consequence of the
+  antiperiodicity of $\cos$) but not over $\C$. Since $m\pi$ is real, both sides are the
+  image under $\R \to \C$ of the real identity: use \lean{Complex.ofReal\_cos}.
+\end{proof}
+
+\begin{lemma}[$\Gamma_{\C}$ at a positive integer]
+  \label{lem:gammaC-natCast}
+  \lean{Complex.inv\_Gammaℂ\_natCast\_add\_one}
+  \leanok
+  For every $k \in \N$,
+  \[ \Gamma_{\C}(k+1)^{-1} \;=\; \frac{2^{k}\,\pi^{k+1}}{k!}. \]
+\end{lemma}
+\begin{proof}
+  \leanok
+  By definition $\Gamma_{\C}(k+1) = 2\,(2\pi)^{-(k+1)}\Gamma(k+1)$, and
+  $\Gamma(k+1) = k!$ (\lean{Complex.Gamma\_nat\_eq\_factorial}). The complex power
+  $(2\pi)^{-(k+1)}$ is an ordinary integer power because the exponent is the image of a
+  natural number (\lean{Complex.cpow\_neg}, \lean{Complex.cpow\_natCast}), so
+  $\Gamma_{\C}(k+1) = 2k!/(2^{k+1}\pi^{k+1}) = k!/(2^{k}\pi^{k+1})$; invert.
+\end{proof}
+
+\section{$\Gamma_{\R}$ vanishes exactly where it has a pole}
+
+Mathlib's \lean{Complex.Gamma} takes the value $0$ at its poles. The framework of
+Chapter~\ref{chap:framework} reads ``$\gamma$ has no pole at $s$'' as ``$\gamma(s) \neq 0$'',
+which for a general function would be false --- a zero need not be a pole. What makes it correct
+for an archimedean factor is that $\Gamma_{\R}$ has no zeros at all, recorded here in mathlib's
+own vocabulary of meromorphic order.
+
+\begin{lemma}[$1/\Gamma_{\R}$ is entire and nowhere locally zero]
+  \label{lem:inv-GammaR-entire}
+  \lean{Complex.differentiable\_inv\_Gammaℝ\_add,
+    Complex.analyticOrderAt\_inv\_Gammaℝ\_add\_ne\_top}
+  \leanok
+  For $a \in \C$ the function $z \mapsto 1/\Gamma_{\R}(z+a)$ is entire, and its analytic order
+  at any point is finite.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Entirety is \lean{Complex.differentiable\_Gammaℝ\_inv} composed with a translation. If the
+  order at some $s$ were $\infty$ the function would vanish on a neighbourhood of $s$, hence
+  identically on $\C$ by the identity theorem; but its value at $1-a$ is $1/\Gamma_{\R}(1) = 1$.
+\end{proof}
+
+\begin{theorem}[The junk value is the pole]
+  \label{thm:GammaR-junk-is-pole}
+  \lean{Complex.meromorphicOrderAt\_Gammaℝ\_add\_neg\_iff,
+    Complex.meromorphicOrderAt\_Gammaℝ\_neg\_iff}
+  \leanok
+  \uses{lem:inv-GammaR-entire}
+  For $a, s \in \C$,
+  \[ \operatorname{ord}_{s}\bigl(z \mapsto \Gamma_{\R}(z+a)\bigr) < 0
+     \iff \Gamma_{\R}(s+a) = 0, \]
+  and the order is at most $0$ everywhere. In particular $\Gamma_{\R}(s) = 0$ if and only if
+  $\Gamma_{\R}$ has a pole at $s$.
+\end{theorem}
+\begin{proof}
+  \leanok
+  Write $f(z) = \Gamma_{\R}(z+a)$ and $g = 1/f$, entire by
+  Lemma~\ref{lem:inv-GammaR-entire}. Then $f = 1/g$ pointwise --- including at the poles, where
+  both sides are $0$, since $0^{-1} = 0$ in Lean --- so
+  $\operatorname{ord}_s f = -\operatorname{ord}_s g$. By Lemma~\ref{lem:inv-GammaR-entire} that
+  order is a natural number $n$, so $\operatorname{ord}_s f = -n \leq 0$, and $n \neq 0$ exactly
+  when $g(s) = 0$, i.e. exactly when $\Gamma_{\R}(s+a) = 0$.
+\end{proof}
+

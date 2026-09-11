@@ -1,0 +1,34 @@
+name = "special_values"
+version = "0.1.0"
+keywords = ["math"]
+defaultTargets = ["SpecialValues"]
+
+[leanOptions]
+pp.unicode.fun = true # pretty-prints `fun a ↦ b`
+autoImplicit = false
+relaxedAutoImplicit = false
+weak.linter.mathlibStandardSet = true
+maxSynthPendingDepth = 3
+
+# Pinned to the same mathlib commit (and hence the same toolchain, v4.34.0-rc2) that
+# AINTLIB pins, so the two dependencies resolve to one mathlib rather than conflicting.
+[[require]]
+name = "mathlib"
+git = "https://github.com/leanprover-community/mathlib4"
+rev = "e4b72ca0d01c"
+
+# Atlas of formalised number theory. Supplies the Hurwitz zeta sawtooth boundary value
+# (`PadicLFunctions.Interpolation.Sawtooth`), which closes the one GL(1) gap mathlib
+# leaves open: `L(χ, 0)` for odd primitive `χ`. Apache-2.0, consumed unmodified.
+[[require]]
+name = "AINTLIB"
+git = "https://github.com/CBirkbeck/AINTLIB.git"
+rev = "160e446617a2168c34c95bbe7a76c4105b392434"
+
+[[require]]
+name = "repl"
+rev = "v4.34.0-rc2"
+git = "https://github.com/leanprover-community/repl.git"
+
+[[lean_lib]]
+name = "SpecialValues"
